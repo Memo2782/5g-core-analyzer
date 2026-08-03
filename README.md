@@ -1,6 +1,6 @@
 # 5G Core & IMS E2E Call Flow Correlator
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-☕_Buy_Me_a_Coffee-orange?style=flat-square)](https://github.com/sponsors/YOURUSERNAME)
+[![Sponsor](https://img.shields.io/badge/Sponsor-☕_Buy_Me_a_Coffee-orange?style=flat-square)](https://github.com/sponsors/guillermopineda)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/Commercial-License-red?style=flat-square)](LICENSE-ENTERPRISE.txt)
 
@@ -10,7 +10,7 @@ Multi-protocol network analyzer for 3GPP 5G Core (5GC) and IMS (IP Multimedia Su
 
 - **Free/Open Source**: MIT license for personal and educational use
 - **Commercial License**: Required for production/enterprise use — see [LICENSE-ENTERPRISE.txt](LICENSE-ENTERPRISE.txt)
-- **Paid Support**: [Buy Now](BUY-NOW.md) or [Sponsor on GitHub](https://github.com/sponsors/YOURUSERNAME)
+- **Paid Support**: [Buy Now](BUY-NOW.md) or [Sponsor on GitHub](https://github.com/sponsors/guillermopineda)
 
 See [SUPPORT.md](SUPPORT.md) for support tiers and response times.
 
@@ -127,9 +127,9 @@ See `marketplace/` directory for listing metadata and seller guide.
 
 | Need | How |
 |------|-----|
-| Report a bug | [GitHub Issues](https://github.com/YOURUSERNAME/5g-core-analyzer/issues) (free) |
-| Ask a question | [GitHub Discussions](https://github.com/YOURUSERNAME/5g-core-analyzer/discussions) (free) |
-| Priority support | [Sponsor on GitHub](https://github.com/sponsors/YOURUSERNAME) ($30/month) |
+| Report a bug | [GitHub Issues](https://github.com/guillermopineda/5g-core-analyzer/issues) (free) |
+| Ask a question | [GitHub Discussions](https://github.com/guillermopineda/5g-core-analyzer/discussions) (free) |
+| Priority support | [Sponsor on GitHub](https://github.com/sponsors/guillermopineda) ($30/month) |
 | Enterprise use | [Commercial license](BUY-NOW.md) ($2,500 one-time) |
 | Custom features | [Consulting](BUY-NOW.md) ($250/hour) |
 

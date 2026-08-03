@@ -74,9 +74,9 @@ Resources:
         - ADMIN_NO_SRP_AUTH
         - USER_PASSWORD_AUTH
       CallbackURLs:
-        - https://5g-core-analyzer.example.com/
+        - https://5g-core-analyzer.guillermopineda.github.io/
       LogoutURLs:
-        - https://5g-core-analyzer.example.com/
+        - https://5g-core-analyzer.guillermopineda.github.io/
 
   # Fargate Service
   FargateService:

@@ -37,4 +37,4 @@ This commercial license ("License") is between the copyright holder
    LICENSOR SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE
    OF THE SOFTWARE.
 
-For license inquiries: license@5g-core-analyzer.example.com
+For license inquiries: license@5g-core-analyzer.guillermopineda.github.io

@@ -22,7 +22,7 @@
   - Early access to new features
   - Monthly feature releases
   - Access to private beta repository
-- [Subscribe via GitHub Sponsors](https://github.com/sponsors/YOURUSERNAME) *(replace with your username)*
+- [Subscribe via GitHub Sponsors](https://github.com/sponsors/guillermopineda) *(replace with your username)*
 
 ### Enterprise Tier
 - **Price**: $500/month (billed annually at $5,000)
@@ -32,7 +32,7 @@
   - 4-hour critical issue response
   - Commercial license included
   - SLA-backed availability
-- [Contact Sales](mailto:sales@5g-core-analyzer.example.com)
+- [Contact Sales](mailto:sales@5g-core-analyzer.guillermopineda.github.io)
 
 ## AWS Marketplace
 
@@ -50,4 +50,4 @@ If you prefer to deploy via AWS Marketplace:
 
 ## Questions
 
-Email: sales@5g-core-analyzer.example.com
+Email: sales@5g-core-analyzer.guillermopineda.github.io
