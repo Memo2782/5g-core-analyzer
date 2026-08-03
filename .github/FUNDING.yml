@@ -1,0 +1,35 @@
+# GitHub Sponsors Configuration
+# See: https://github.com/sponsors/[YOUR-USERNAME]
+#
+# Enable GitHub Sponsors on your profile, then add these tiers
+# in the Sponsors dashboard under "Sponsorship tiers".
+
+name: "5G Core Analyzer"
+website: "https://github.com/5G-Core-Analyzer/5g-core-analyzer"
+description: "Support the development of 5G Core & IMS network analyzer tools"
+
+# Tier 1 - Coffee
+tier_10:
+  name: "$10 / month"
+  description: "☕ Buy me a coffee! Your support helps me dedicate more time to open-source network analysis tools."
+
+# Tier 2 - Pro Support
+tier_30:
+  name: "$30 / month"
+  description: "Professional support tier — priority issue responses (48h), early access to features, and a private discussion forum for troubleshooting."
+  is_recurring: true
+
+# Tier 3 - Enterprise
+tier_500:
+  name: "$500 / month"
+  description: "Enterprise tier — dedicated Slack support channel, custom feature development, commercial license, and 4-hour critical response SLA."
+  is_recurring: true
+
+# One-time payments
+one_time_tiers:
+  - amount: 50
+    name: "$50 — One-time support"
+    description: "Fund a specific bug fix or feature."
+  - amount: 250
+    name: "$250 — Consulting hour"
+    description: "One hour of consulting for custom integration or troubleshooting."

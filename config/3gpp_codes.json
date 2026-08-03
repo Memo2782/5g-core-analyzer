@@ -1,0 +1,123 @@
+{
+  "sbi_http_errors": {
+    "400": "Bad Request - Schema mismatch or malformed JSON syntax",
+    "401": "Unauthorized - Authentication vector or K/OPc key validation failure",
+    "403": "Forbidden - Subscription profile lacks permission for selected DNN/Slice",
+    "404": "Not Found - Identity absent or NF not registered in NRF catalog",
+    "405": "Method Not Allowed - HTTP method invalid for target SBI resource",
+    "406": "Not Acceptable - S-NSSAI Slice is geographically blocked at this TAI",
+    "409": "Conflict - Resource already exists or concurrent update collision",
+    "411": "Length Required - Missing Content-Length header in SBI signaling",
+    "413": "Payload Too Large - JSON message exceeds node buffer capacity limit",
+    "415": "Unsupported Media Type - Content-Type header is not application/json",
+    "429": "Too Many Requests - SCP/Proxy overload protection mechanism active",
+    "500": "Internal Server Error - Microservice pod crash or UDR database drop",
+    "503": "Service Unavailable - Element active but isolated in traffic draining mode",
+    "504": "Gateway Timeout - Multi-node cascading latency or thread freeze"
+  },
+  "sbi_http_errors_5gs": {
+    "404": { "name": "HTTP 404 Not Found", "desc": "The AMF requested subscription profile lookups over the N8 interface, but the target SUPI string does not exist.", "ts": "Validate subscriber provisioning variables inside the UDR central database cluster." },
+    "504": { "name": "HTTP 504 Gateway Timeout", "desc": "Cascading interface latency. The AMF signaling loop timed out waiting for the SMF context validation on the N11 interface.", "ts": "Increase signaling guard parameters and monitor background container CPU metrics." }
+  },
+  "nas_mobility_errors_5gs": {
+    "3": "Illegal UE - Core authentication handshake failure or blacklisted IMEI",
+    "7": "5GS services not allowed - 5G Standalone access disabled in profile",
+    "9": "UE identity cannot be derived - Invalid or expired 5G-GUTI pointer",
+    "11": "PLMN not allowed - Inter-operator roaming violation across SEPP boundary",
+    "22": "Congestion - AMF core engine is temporarily overloaded with registrations",
+    "27": "N1 mode not allowed - Native 5G control plane layer restricted for SIM",
+    "31": "Redirection to EPC required - Forced technology fallback to 4G LTE via N26",
+    "65": "Maximum number of PDU sessions reached - Exceeded concurrent policy cap",
+    "72": "Non-3GPP access to 5GCN not allowed - Untrusted Wi-Fi connection blocked"
+  },
+  "nas_session_errors_5gs": {
+    "26": "Insufficient resources - Dyn IP pool exhaustion or node memory bottleneck",
+    "28": "Unknown or missing DNN - Mismatched or unprovisioned network APN name",
+    "32": "Service option not subscribed - Unauthorized QoS profile or 5QI request",
+    "38": "Network failure - Critical PFCP tunnel teardown across N4 interface to UPF",
+    "43": "Invalid PDU session identity - UE sent a non-existent or duplicate Session ID"
+  },
+  "ims_sip_errors": {
+    "403": { "name": "SIP 403 Forbidden", "desc": "The IMS Core accepted the request, but the Telephony Application Server (TAS) explicitly rejects execution because the MSISDN lacks a voice provisioning profile.", "ts": "Verify user flags inside the HSS/UDM. Ensure the TAS database has replicated the corresponding iFC (Initial Filter Criteria)." },
+    "404": { "name": "SIP 404 Not Found", "desc": "The dialed string (Tel URI / SIP URI) matches no valid routing entries inside the translation tables.", "ts": "Check local ENUM or internal DNS records on the S-CSCF server layer." },
+    "488": { "name": "SIP 488 Not Acceptable Here", "desc": "Critical Session Description Protocol (SDP) audio codec negotiation mismatch.", "ts": "Ensure the device supports HD Voice (EVS or AMR-WB). Enable transcodification profiles on the MRFP gateway node." },
+    "504": { "name": "SIP 504 Server Time-out", "desc": "The P-CSCF edge controller received no response from the downstream S-CSCF proxy inside the T1 guard timer windows.", "ts": "Audit internal IP routing planes and check session state capacity limits on the core elements." }
+  },
+  "legacy_4g_nas_emm_emm": {
+    "2": "IMSI unknown in HSS - User not provisioned in the 4G HSS database",
+    "5": "IMEI not accepted - Device serial number blocked by EIR",
+    "8": "EPS services not allowed - 4G LTE packet access blocked for this user",
+    "14": "GPRS services not allowed in this PLMN - Legacy data roaming restriction",
+    "15": "No Suitable Cells In Tracking Area - Core rejects attachment in this grid location"
+  },
+  "legacy_4g_diameter_errors_s6a": {
+    "5001": "DIAMETER_ERROR_USER_UNKNOWN - IMSI completely absent from 4G HSS database",
+    "5004": "DIAMETER_ERROR_ROAMING_NOT_ALLOWED - Inter-PLMN traffic routing restriction",
+    "5422": "DIAMETER_BEARER_OUT_OF_RESOURCES - MME/SGW user-plane capacity saturation",
+    "5003": "DIAMETER_ERROR_IDENTITY_UNKNOWN - Host/Realm mismatch during Diameter routing",
+    "5005": "DIAMETER_ERROR_IDENTITY_REJECTED - Security credential failure on HSS handshake"
+  },
+  "legacy_2g_3g_map_errors_ss7": {
+    "1": "Unknown Subscriber - IMSI absent from legacy HLR core node",
+    "11": "Teleservice Not Provisioned - User has no permission for Voice/SMS/Data payload",
+    "13": "Roaming Not Allowed - National or international boundary restriction",
+    "34": "System Failure - SS7/SIGTRAN STP routing collapse or database freeze"
+  },
+  "fallas_nodos_5g": [
+    {
+      "procedimiento": "5GS_REGISTRATION",
+      "nodo_origen": "AMF",
+      "nodo_destino": "AUSF",
+      "interfaz": "N12",
+      "codigo_http": 401,
+      "causa_nas": 2,
+      "error_3gpp": "IMSI/SUPI Authentication Reject",
+      "causa_raiz": "El vector de autenticación (RAND/AUTN) enviado por la AUSF falló la validación criptográfica en la tarjeta SIM del dispositivo móvil.",
+      "solucion_L3": "Verificar si las llaves maestras K y OPc están correctamente aprovisionadas e idénticas tanto en la UDM/UDR como en el fabricante de la SIM card."
+    },
+    {
+      "procedimiento": "5GS_REGISTRATION",
+      "nodo_origen": "AMF",
+      "nodo_destino": "UDM",
+      "interfaz": "N8",
+      "codigo_http": 404,
+      "causa_nas": 3,
+      "error_3gpp": "Illegal UE / Subscription Not Found",
+      "causa_raiz": "La AMF solicitó el perfil de movilidad (Subscription Data) a la UDM, pero la identidad del usuario (SUPI/IMSI) no existe en la base de datos central.",
+      "solucion_L3": "Validar si el usuario fue dado de alta correctamente en el sistema de aprovisionamiento (HSS/UDM). Comprobar sincronización con el CRM/HLR."
+    },
+    {
+      "procedimiento": "PDU_SESSION_ESTABLISHMENT",
+      "nodo_origen": "AMF",
+      "nodo_destino": "SMF",
+      "interfaz": "N11",
+      "codigo_http": 504,
+      "causa_nas": 26,
+      "error_3gpp": "Insufficient Resources / SMF Timeout",
+      "causa_raiz": "La AMF intentó iniciar la sesión de datos, pero la SMF no respondió dentro del temporizador de guardia debido a saturación en la asignación de direcciones IP.",
+      "solucion_L3": "Revisar los pools de direccionamiento IPv4/IPv6 asignados al DNN (Data Network Name) en la SMF. Verificar logs de consumo de CPU/Memoria del nodo."
+    },
+    {
+      "procedimiento": "PDU_SESSION_ESTABLISHMENT",
+      "nodo_origen": "SMF",
+      "nodo_destino": "PCF",
+      "interfaz": "N7",
+      "codigo_http": 403,
+      "causa_nas": 32,
+      "error_3gpp": "Service Option Not Subscribed (QoS Reject)",
+      "causa_raiz": "La PCF rechazó la solicitud de políticas porque el perfil del usuario no tiene permitido el identificador de calidad de servicio (5QI) solicitado para esta sesión (ej. rebanada de red/Slice incorrecto).",
+      "solucion_L3": "Revisar las reglas de control de políticas de cuotas (PCC Rules) en la PCF. Validar compatibilidad del Network Slice (S-NSSAI) configurado en el dispositivo."
+    },
+    {
+      "procedimiento": "PDU_SESSION_ESTABLISHMENT",
+      "nodo_origen": "SMF",
+      "nodo_destino": "UPF",
+      "interfaz": "N4",
+      "codigo_http": 500,
+      "causa_nas": 38,
+      "error_3gpp": "Network Failure (PFCP Session Malfunction)",
+      "causa_raiz": "Falla crítica en el protocolo PFCP (Packet Forwarding Control Protocol). La SMF no pudo establecer las reglas de reenvío de datos en el plano de usuario (UPF).",
+      "solucion_L3": "Monitorear el estado del enlace físico/lógico de la interfaz N4. Validar que las direcciones de los nodos GTP-U estén respondiendo al ping de control."
+    }
+  ]
+}

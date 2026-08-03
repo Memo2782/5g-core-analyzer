@@ -1,0 +1,47 @@
+{
+  "name": "5G Core & IMS E2E Call Flow Correlator",
+  "description": "Multi-protocol network analyzer for 3GPP 5G Core and IMS environments. Upload PCAP traces, correlate signaling, and visualize interactive call flow diagrams with IMSI/MSISDN tracking. Supports VoNR, VoLTE, and 5G SA troubleshooting.",
+  "version": "1.0.0",
+  "categories": ["Networking", "Telecommunications", "Security"],
+  "license": "MIT",
+  "pricing": {
+    "model": "per_hour",
+    "tiers": [
+      {
+        "name": "Basic",
+        "price": "0.50",
+        "description": "Single-user instance, 5 trace uploads, basic Mermaid diagrams"
+      },
+      {
+        "name": "Professional",
+        "price": "2.50",
+        "description": "Multi-user (Cognito), unlimited traces, Excel export, API access"
+      },
+      {
+        "name": "Enterprise",
+        "price": "10.00",
+        "description": "Enterprise SSO, 100 concurrent users, premium support, custom dashboards"
+      }
+    ]
+  },
+  "deployment": {
+    "type": "container",
+    "container": {
+      "type": "ecs",
+      "image": "ACCOUNT.dkr.ecr.REGION.amazonaws.com/5g-core-analyzer:latest",
+      "ports": [8000],
+      "environment": {
+        "STORAGE_BUCKET": "5g-core-analyzer-s3",
+        "STORAGE_PREFIX": "uploads/"
+      }
+    },
+    "infrastructure": {
+      "cloudformation_template": "aws/cloudformation.yaml",
+      "ecs_task_definition": "ecs-task-def.json"
+    }
+  },
+  "support": {
+    "email": "support@5g-core-analyzer.example.com",
+    "documentation": "https://github.com/5G-Core-Analyzer/docs"
+  }
+}

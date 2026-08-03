@@ -1,0 +1,25 @@
+[2026-08-03T11:05:05.213Z] ==> SIP REGISTER sent from UE to PCSCF
+    From: <sip:521348772633@ims.mnc01.mcc295.3gppnetwork.org>
+    To: <sip:521348772633@ims.mnc01.mcc295.3gppnetwork.org>
+    P-Asserted-Identity: <tel:521348772633>
+    P-Access-Network-Identity: imsi-29501485705057252225
+[2026-08-03T11:05:05.263Z] ==> SIP INVITE sent from UE to PCSCF
+    From: <sip:521348772633@ims.mnc01.mcc295.3gppnetwork.org>;tag=906411
+    To: <sip:1001@ims.mnc01.mcc295.3gppnetwork.org>
+    Call-ID: 511780@scscf.ims
+    P-Charging-Vector: icid-value=53544496; imsi=29501485705057252225
+    Content-Type: application/sdp
+    SDP: m=audio 50000 RTP/AVP 111 110 0 8
+[2026-08-03T11:05:05.313Z] <== SIP 100 Trying from PCSCF to UE
+    Call-ID: 511780@scscf.ims
+[2026-08-03T11:05:05.363Z] ==> SIP INVITE forwarded from PCSCF to SCSCF
+    Call-ID: 511780@scscf.ims
+    P-Charging-Vector: imsi=29501485705057252225
+[2026-08-03T11:05:05.413Z] ==> SIP INVITE forwarded from SCSCF to TAS
+    Call-ID: 511780@scscf.ims
+[2026-08-03T11:05:05.463Z] <== SIP 200 OK from TAS to SCSCF
+    Call-ID: 511780@scscf.ims
+[2026-08-03T11:05:05.513Z] <== SIP 200 OK from SCSCF to PCSCF
+    Call-ID: 511780@scscf.ims
+[2026-08-03T11:05:05.563Z] <== SIP 200 OK from PCSCF to UE
+    Call-ID: 511780@scscf.ims

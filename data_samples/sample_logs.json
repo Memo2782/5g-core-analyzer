@@ -1,0 +1,53 @@
+[
+    {
+        "timestamp": "2026-07-27T17:30:00Z",
+        "interface": "N11",
+        "source": "AMF",
+        "destination": "SMF",
+        "messageType": "Create Sm Context Request",
+        "level": "info",
+        "code": "200",
+        "description": "Session creation accepted by SMF"
+    },
+    {
+        "timestamp": "2026-07-27T17:30:01Z",
+        "interface": "N4",
+        "source": "SMF",
+        "destination": "UPF",
+        "messageType": "N4 Session Modification",
+        "level": "warning",
+        "code": "WARN",
+        "details": "Slow response detected"
+    },
+    {
+        "timestamp": "2026-07-27T17:30:02Z",
+        "interface": "N2",
+        "source": "gNB",
+        "destination": "AMF",
+        "messageType": "Handover Required",
+        "level": "error",
+        "code": "507",
+        "description": "Handover failure due to timeout",
+        "details": "Target AMF did not respond within 5000ms"
+    },
+    {
+        "timestamp": "2026-07-27T17:30:03Z",
+        "interface": "N5",
+        "source": "AMF",
+        "destination": "AUSF",
+        "messageType": "UE Authentication",
+        "level": "error",
+        "code": "401",
+        "description": "Authentication failed"
+    },
+    {
+        "timestamp": "2026-07-27T17:30:04Z",
+        "interface": "N12",
+        "source": "AMF",
+        "destination": "UDM",
+        "messageType": "Registration Accept",
+        "level": "info",
+        "code": "200",
+        "description": "Registration accepted"
+    }
+]

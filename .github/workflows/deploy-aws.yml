@@ -1,0 +1,59 @@
+name: Deploy to AWS
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      aws_region:
+        description: 'AWS Region'
+        required: true
+        default: 'us-east-1'
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+      ecr_repository:
+        description: 'ECR Repository Name'
+        required: true
+        default: '5g-core-analyzer'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ inputs.aws_access_key_id }}
+          aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          IMAGE_TAG: ${{ github.ref_name || 'latest' }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy CloudFormation stack
+        run: |
+          STACK_NAME="${{ inputs.ecr_repository }}-stack"
+          ECR_URL="${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}:${{ github.ref_name || 'latest' }}"
+          aws cloudformation deploy \
+            --template-file aws/cloudformation.yaml \
+            --stack-name $STACK_NAME \
+            --parameter-overrides ContainerImage=$ECR_URL \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM

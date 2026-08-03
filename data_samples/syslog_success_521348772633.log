@@ -1,0 +1,10 @@
+<165>1 2026-08-03T11:05:05.213Z 5gc-host AMF - - [imsi:29501485705057252225][msisdn:521348772633] NAS Registration Request received from UE (SUPI=29501485705057252225)
+<165>1 2026-08-03T11:05:05.313Z 5gc-host AMF - - [imsi:29501485705057252225][msisdn:521348772633] N12 AUSF Authentication Request sent to 10.100.1.20
+<165>1 2026-08-03T11:05:05.413Z 5gc-host AUSF - - [imsi:29501485705057252225][msisdn:521348772633] N12 AUSF Authentication Success: HTTP 200
+<165>1 2026-08-03T11:05:05.513Z 5gc-host AMF - - [imsi:29501485705057252225][msisdn:521348772633] N8 UDM Subscription Data Get to 10.100.1.30
+<165>1 2026-08-03T11:05:05.613Z 5gc-host UDM - - [imsi:29501485705057252225][msisdn:521348772633] N8 UDM Subscription Data Response: HTTP 200 OK
+<165>1 2026-08-03T11:05:05.713Z 5gc-host AMF - - [imsi:29501485705057252225][msisdn:521348772633] N11 SMF Create SM Context Request sent
+<165>1 2026-08-03T11:05:05.813Z 5gc-host SMF - - [imsi:29501485705057252225][msisdn:521348772633] N11 SMF Create SM Context Response: HTTP 201 Created
+<165>1 2026-08-03T11:05:05.913Z ims-host UE - - [imsi:29501485705057252225][msisdn:521348772633][call-id:511780@scscf.ims] SIP INVITE sent to PCSCF - VoNR call setup initiated
+<165>1 2026-08-03T11:05:06.013Z ims-host TAS - - [imsi:29501485705057252225][msisdn:521348772633][call-id:511780@scscf.ims] SIP 200 OK response from TAS - call connected
+<165>1 2026-08-03T11:05:06.113Z 5gc-host UPF - - [imsi:29501485705057252225][msisdn:521348772633] N4 PFCP Session Establishment: pfcp_session_id=53544496 - media plane active

@@ -1,0 +1,8 @@
+2026-08-03T11:05:05.213Z 10.100.9.99:5060 - - "POST /n1s/auth?imsi=29501907679568720033&msisdn=524270407518 HTTP/2.0" 401 166 "-" "UE_Agent"
+2026-08-03T11:05:05.263Z 10.100.1.10:80 - - "POST /n12/nausf-ueAuthentication?imsi=29501907679568720033 HTTP/2.0" 401 162 "-" "AMF_SBI_Client"
+2026-08-03T11:05:05.313Z 10.100.1.10:80 - - "GET /n8/nudm-sdm?supi=29501907679568720033 HTTP/2.0" 200 368 "-" "AMF_SBI_Client"
+2026-08-03T11:05:05.363Z 10.100.1.10:80 - - "POST /n11/nsmf-pdusession?pfcp_session_id=74039267 HTTP/2.0" 201 892 "-" "AMF_SBI_Client"
+2026-08-03T11:05:05.413Z 10.100.9.99:5060 - - "INVITE sip:1001@ims.mnc01.mcc295.3gppnetwork.org SIP/2.0" 200 486 "-" "SIP_Client/5.0"
+    P-Charging-Vector: imsi=29501907679568720033; msisdn=524270407518; call-id=777832@tas.ims
+2026-08-03T11:05:05.463Z 10.200.8.8:5060 - - "INVITE sip:1001@ims.mnc01.mcc295.3gppnetwork.org SIP/2.0" 200 449 "-" "TAS_Server/3.0"
+    P-Charging-Vector: imsi=29501907679568720033; msisdn=524270407518; call-id=777832@tas.ims

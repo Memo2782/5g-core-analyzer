@@ -1,0 +1,38 @@
+name: Paid Support Request
+about: For Pro/Enterprise tier customers needing priority support
+title: '[SUPPORT] '
+labels: support
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: Describe your support request in detail.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Your GitHub username or sponsor account
+      description: To verify support tier
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Urgency
+      options:
+        - Low (general question)
+        - Medium (need help within 48 hours)
+        - High (issue is blocking work, need response within 4 hours)
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Environment
+      description: Deployment method (Docker, AWS, local), OS
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Logs, error messages, PCAP file details.
+    validations:
+      required: false

@@ -1,0 +1,40 @@
+Commercial License Agreement - 5G Core Analyzer
+
+Copyright (c) 2026 5G Core Analyzer Contributors
+
+This commercial license ("License") is between the copyright holder
+("Licensor") and the individual or organization acquiring this license
+("Licensee").
+
+1. GRANT OF LICENSE
+   Subject to the terms of this License, Licensor grants Licensee a
+   non-exclusive, non-transferable right to use the 5G Core Analyzer
+   software ("Software") for production and commercial purposes within
+   the Licensee's organization.
+
+2. PROHIBITED USE WITHOUT COMMERCIAL LICENSE
+   Without a valid commercial license, the Software may only be used for
+   personal, educational, and research purposes in non-production
+   environments. Commercial production use requires a paid license.
+
+3. SUPPORT AND UPDATES
+   - Pro Tier ($50/month): Priority email support, 24-hour response SLA,
+     quarterly feature updates
+   - Enterprise Tier ($500/month): Dedicated support engineer, custom
+     feature development, 4-hour critical issue response, SLA-backed
+     availability
+
+4. MODIFICATIONS
+   Licensee may modify the source code for internal use. Redistribution
+   of modified versions requires prior written consent from Licensor.
+
+5. TERM AND TERMINATION
+   This License is perpetual unless terminated in writing by Licensor.
+   Upon termination, Licensee must cease all commercial use of the Software.
+
+6. LIMITATION OF LIABILITY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+   LICENSOR SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE
+   OF THE SOFTWARE.
+
+For license inquiries: license@5g-core-analyzer.example.com

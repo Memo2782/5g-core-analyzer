@@ -1,0 +1,25 @@
+[2026-08-03T11:05:05.213Z] ==> SIP REGISTER sent from UE to PCSCF
+    From: <sip:521965629205@ims.mnc01.mcc295.3gppnetwork.org>
+    To: <sip:521965629205@ims.mnc01.mcc295.3gppnetwork.org>
+    P-Asserted-Identity: <tel:521965629205>
+    P-Access-Network-Identity: imsi-29501176258444794466
+[2026-08-03T11:05:05.263Z] ==> SIP INVITE sent from UE to PCSCF
+    From: <sip:521965629205@ims.mnc01.mcc295.3gppnetwork.org>;tag=879169
+    To: <sip:1001@ims.mnc01.mcc295.3gppnetwork.org>
+    Call-ID: 763641@tas.ims
+    P-Charging-Vector: icid-value=33162212; imsi=29501176258444794466
+    Content-Type: application/sdp
+    SDP: m=audio 50000 RTP/AVP 111 110 0 8
+[2026-08-03T11:05:05.313Z] <== SIP 100 Trying from PCSCF to UE
+    Call-ID: 763641@tas.ims
+[2026-08-03T11:05:05.363Z] ==> SIP INVITE forwarded from PCSCF to SCSCF
+    Call-ID: 763641@tas.ims
+[2026-08-03T11:05:05.413Z] ==> SIP INVITE forwarded from SCSCF to TAS
+    Call-ID: 763641@tas.ims
+[2026-08-03T11:05:05.463Z] <== SIP 403 Forbidden from TAS to SCSCF
+    Call-ID: 763641@tas.ims
+    Reason: Provisioning error - MSISDN 521965629205 not found in TAS DB
+[2026-08-03T11:05:05.513Z] <== SIP 403 Forbidden from SCSCF to PCSCF
+    Call-ID: 763641@tas.ims
+[2026-08-03T11:05:05.563Z] <== SIP 403 Forbidden from PCSCF to UE
+    Call-ID: 763641@tas.ims

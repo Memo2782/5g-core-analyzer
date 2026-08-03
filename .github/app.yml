@@ -1,0 +1,9 @@
+# GitHub App Configuration for Automated Issue Handling
+# Install this GitHub App to automatically label and prioritize issues
+# based on the reporter's sponsor status.
+
+# This file documents the automation workflow.
+# Implement via GitHub Actions in .github/workflows/auto-label.yml
+
+name: "5G Analyzer Bot"
+description: "Automatically labels issues based on complexity and route to appropriate support tier"
