@@ -1,19 +1,6 @@
 # Buy Now — Commercial Licenses & Support
 
-## One-Time Licenses
-
-### Perpetual License
-- **Price**: $2,500
-- **Includes**: 1 year of updates and support
-- **Renewal**: $500/year (optional, for continued updates)
-- [Buy Now via Stripe](https://buy.stripe.com/test_perpetual-license) *(replace with your Stripe link)*
-
-### Consulting Hour
-- **Price**: $250/hour
-- **Includes**: Custom feature development, integration assistance, or troubleshooting
-- [Buy Now via Stripe](https://buy.stripe.com/test_consulting-hour) *(replace with your Stripe link)*
-
-## Monthly Subscriptions
+## Monthly Subscriptions (Recommended)
 
 ### Pro Tier
 - **Price**: $50/month
@@ -22,7 +9,7 @@
   - Early access to new features
   - Monthly feature releases
   - Access to private beta repository
-- [Subscribe via GitHub Sponsors](https://github.com/sponsors/guillermopineda) *(replace with your username)*
+- **[Subscribe via GitHub Sponsors](https://github.com/sponsors/Memo2782)** (select recurring payment)
 
 ### Enterprise Tier
 - **Price**: $500/month (billed annually at $5,000)
@@ -32,22 +19,34 @@
   - 4-hour critical issue response
   - Commercial license included
   - SLA-backed availability
-- [Contact Sales](mailto:sales@5g-core-analyzer.guillermopineda.github.io)
+- **[Contact Sales](mailto:sales@Memo2782.github.io)**
+
+## One-Time Payments
+
+### Perpetual License
+- **Price**: $2,500 (≈ MXN $45,000 at current exchange)
+- **Includes**: 1 year of updates and support
+- **Renewal**: $500/year (optional, for continued updates)
+- **[Pay via PayPal](https://www.paypal.com/paypalme/Memo2782/2500usd)** (supports MXN, cards, and PayPal balance)
+
+### Consulting Hour
+- **Price**: $250/hour (≈ MXN $4,500 at current exchange)
+- **Includes**: Custom feature development, integration assistance, or troubleshooting
+- **[Pay via PayPal](https://www.paypal.com/paypalme/Memo2782/250usd)**
 
 ## AWS Marketplace
 
-If you prefer to deploy via AWS Marketplace:
+If you prefer AWS billing:
 - **Price**: $3/hr (t3.small equivalent)
 - **Includes**: Fully managed container, auto-scaling, AWS integration
-- [View on AWS Marketplace](https://aws.amazon.com/marketplace/pp/B0XXXXXXXXX) *(replace with your ASIN)*
+- Coming soon (contact for early access)
 
 ## How Purchases Work
 
-1. **Click the Stripe/GitHub Sponsors link** above
-2. **Complete payment** — you'll receive an email confirmation
-3. **Get access** — we'll add you to the appropriate support channel
-4. **Start using** — download release artifacts and get priority support
+1. **GitHub Sponsors**: Click the Sponsors link, sign in with GitHub, choose monthly or one-time, and GitHub handles the billing (works with Mexican bank accounts)
+2. **PayPal**: Click the PayPal link, pay with any method (credit card, debit card, PayPal balance, Spei - works for MX bank accounts)
+3. **Enterprise**: Email sales@Memo2782.github.io for a custom quote
 
 ## Questions
 
-Email: sales@5g-core-analyzer.guillermopineda.github.io
+Email: support@Memo2782.github.io

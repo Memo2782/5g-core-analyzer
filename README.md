@@ -1,6 +1,6 @@
 # 5G Core & IMS E2E Call Flow Correlator
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-☕_Buy_Me_a_Coffee-orange?style=flat-square)](https://github.com/sponsors/guillermopineda)
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤_GitHub_Sponsors-red?style=flat-square)](https://github.com/sponsors/Memo2782)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/Commercial-License-red?style=flat-square)](LICENSE-ENTERPRISE.txt)
 
@@ -127,11 +127,11 @@ See `marketplace/` directory for listing metadata and seller guide.
 
 | Need | How |
 |------|-----|
-| Report a bug | [GitHub Issues](https://github.com/guillermopineda/5g-core-analyzer/issues) (free) |
-| Ask a question | [GitHub Discussions](https://github.com/guillermopineda/5g-core-analyzer/discussions) (free) |
-| Priority support | [Sponsor on GitHub](https://github.com/sponsors/guillermopineda) ($30/month) |
-| Enterprise use | [Commercial license](BUY-NOW.md) ($2,500 one-time) |
-| Custom features | [Consulting](BUY-NOW.md) ($250/hour) |
+| Report a bug | [GitHub Issues](https://github.com/Memo2782/5g-core-analyzer/issues) (free) |
+| Ask a question | [GitHub Discussions](https://github.com/Memo2782/5g-core-analyzer/discussions) (free) |
+| Priority support | [Sponsor on GitHub](https://github.com/sponsors/Memo2782) ($50/month) |
+| Enterprise use | [Commercial license](BUY-NOW.md) ($2,500 one-time, PayPal) |
+| Custom features | [Consulting](BUY-NOW.md) ($250/hour, PayPal)
 
 See [SUPPORT.md](SUPPORT.md) for full support details.
 

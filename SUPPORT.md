@@ -15,7 +15,7 @@ For dedicated support, feature requests, and priority access, choose a tier:
 | **Pro** | $50/month | Priority GitHub issues (48h response), monthly feature releases, private repo access for beta features |
 | **Enterprise** | $500/month | Dedicated Slack channel, 4-hour critical response, custom feature development (up to 40 hours/month), commercial license, SLA-backed availability |
 
-Contact: support@5g-core-analyzer.guillermopineda.github.io
+Contact: support@Memo2782.github.io
 
 ### Enterprise Licensing
 For commercial production use, a commercial license is required.
@@ -24,13 +24,13 @@ For commercial production use, a commercial license is required.
 - **Perpetual license**: $2,500 (includes 1 year of updates and support)
 - **Annual renewal**: 20% of license cost
 
-Contact: license@5g-core-analyzer.guillermopineda.github.io
+Contact: license@Memo2782.github.io
 
 ## Support Process
 
 1. **Free tier**: Open a GitHub Issue or Discussion
-2. **Paid tiers**: Email support@5g-core-analyzer.guillermopineda.github.io with your tier reference
-3. **Enterprise**: Contact sales@5g-core-analyzer.guillermopineda.github.io for a custom quote
+2. **Paid tiers**: Email support@Memo2782.github.io with your tier reference
+3. **Enterprise**: Contact sales@Memo2782.github.io for a custom quote
 
 ## What's Covered
 
