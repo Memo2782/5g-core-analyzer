@@ -10,19 +10,21 @@
 ### Paid Support
 For dedicated support, feature requests, and priority access, choose a tier:
 
-| Tier | Price | What You Get |
-|------|-------|--------------|
-| **Pro** | $50/month | Priority GitHub issues (48h response), monthly feature releases, private repo access for beta features |
-| **Enterprise** | $500/month | Dedicated Slack channel, 4-hour critical response, custom feature development (up to 40 hours/month), commercial license, SLA-backed availability |
+| Tier | Price | How |
+|------|-------|-----|
+| **Pro** | $50/month | [PayPal.Me/Memo2782](https://www.paypal.com/paypalme/Memo2782) |
+| **Enterprise** | $500/month | Email sales@Memo2782.github.io for invoice |
 
 Contact: support@Memo2782.github.io
 
 ### Enterprise Licensing
 For commercial production use, a commercial license is required.
 
-- **License cost**: Included in Enterprise tier
 - **Perpetual license**: $2,500 (includes 1 year of updates and support)
-- **Annual renewal**: 20% of license cost
+  - Pay via [PayPal](https://www.paypal.com/paypalme/Memo2782/2500usd) (supports MXN)
+  - License delivered via email after payment
+- **Annual renewal**: $500/year (optional, for continued updates)
+  - Pay via [PayPal](https://www.paypal.com/paypalme/Memo2782/500usd)
 
 Contact: license@Memo2782.github.io
 

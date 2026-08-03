@@ -1,6 +1,6 @@
 # 5G Core & IMS E2E Call Flow Correlator
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-❤_GitHub_Sponsors-red?style=flat-square)](https://github.com/sponsors/Memo2782)
+[![Support via PayPal](https://img.shields.io/badge/Support-💝_PayPal-orange?style=flat-square)](https://www.paypal.com/paypalme/Memo2782)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/Commercial-License-red?style=flat-square)](LICENSE-ENTERPRISE.txt)
 
@@ -129,9 +129,9 @@ See `marketplace/` directory for listing metadata and seller guide.
 |------|-----|
 | Report a bug | [GitHub Issues](https://github.com/Memo2782/5g-core-analyzer/issues) (free) |
 | Ask a question | [GitHub Discussions](https://github.com/Memo2782/5g-core-analyzer/discussions) (free) |
-| Priority support | [Sponsor on GitHub](https://github.com/sponsors/Memo2782) ($50/month) |
+| Priority support | [Monthly via PayPal](BUY-NOW.md) ($50/month, via PayPal.Me/Memo2782) |
 | Enterprise use | [Commercial license](BUY-NOW.md) ($2,500 one-time, PayPal) |
-| Custom features | [Consulting](BUY-NOW.md) ($250/hour, PayPal)
+| Custom features | [Consulting](BUY-NOW.md) ($250/hour, PayPal) |
 
 See [SUPPORT.md](SUPPORT.md) for full support details.
 
