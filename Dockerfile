@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tshark \
     libglib2.0-0 \
-    libpcre3-dev \
+    libpcre2-dev \
     libxml2 \
     && rm -rf /var/lib/apt/lists/*
 
