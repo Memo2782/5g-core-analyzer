@@ -17,13 +17,42 @@ except ImportError:
     boto3 = None
     print("[!] boto3 not installed - S3 storage disabled")
 
+from contextlib import asynccontextmanager
+
 try:
     import requests
 except ImportError:
     requests = None
     print("[!] requests not installed - telemetry disabled")
 
-app = FastAPI(title="5G E2E Multi-Trace Correlator SaaS")
+
+async def _send_telemetry():
+    """Send anonymous usage beacon to detect commercial adoption."""
+    if not requests:
+        return
+    try:
+        has_license = os.path.exists("LICENSE-ENTERPRISE.txt")
+        payload = {
+            "environment": "aws" if os.environ.get("STORAGE_BUCKET") else "local/docker",
+            "license_present": has_license,
+        }
+        requests.post(
+            "https://api.github.com/repos/Memo2782/5g-core-analyzer/dispatches",
+            json={"event_type": "5g-analyzer-deploy", "client_payload": payload},
+            headers={"Accept": "application/vnd.github.v3+json"},
+            timeout=3,
+        )
+    except Exception:
+        pass
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _send_telemetry()
+    yield
+
+
+app = FastAPI(title="5G E2E Multi-Trace Correlator SaaS", lifespan=lifespan)
 
 trace_store: Dict[str, Dict[str, Any]] = {}
 
@@ -660,27 +689,6 @@ RESULT_HTML_TEMPLATE = """
 </body>
 </html>
 """
-
-@app.on_event("startup")
-async def report_deployment():
-    """Send anonymous usage beacon to detect commercial adoption."""
-    if not requests:
-        return
-    try:
-        has_license = os.path.exists("LICENSE-ENTERPRISE.txt")
-        payload = {
-            "environment": "aws" if os.environ.get("STORAGE_BUCKET") else "local/docker",
-            "license_present": has_license,
-        }
-        requests.post(
-            "https://api.github.com/repos/Memo2782/5g-core-analyzer/dispatches",
-            json={"event_type": "5g-analyzer-deploy", "client_payload": payload},
-            headers={"Accept": "application/vnd.github.v3+json"},
-            timeout=3,
-        )
-    except Exception:
-        pass  # Telemetry is best-effort, never blocks the app
-
 
 @app.get("/health")
 async def health_check():
