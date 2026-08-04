@@ -1,6 +1,6 @@
 # 5G Core & IMS E2E Call Flow Correlator
 
-[![Support via grabrfi](https://img.shields.io/badge/Support-💝_grabrfi-green?style=flat-square)](https://grabrfi.com/pay/$xhaq3x)
+[![Support via PayPal](https://img.shields.io/badge/Support-💝-PayPal-orange?style=flat-square)](https://www.paypal.com/paypalme/Memo2782)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/Commercial-License-red?style=flat-square)](LICENSE-ENTERPRISE.txt)
 
@@ -129,9 +129,9 @@ See `marketplace/` directory for listing metadata and seller guide.
 |------|-----|
 | Report a bug | [GitHub Issues](https://github.com/Memo2782/5g-core-analyzer/issues) (free) |
 | Ask a question | [GitHub Discussions](https://github.com/Memo2782/5g-core-analyzer/discussions) (free) |
-| Priority support | [Monthly via grabrfi](BUY-NOW.md) ($50/month) |
-| Enterprise use | [Commercial license](BUY-NOW.md) ($2,500 one-time via grabrfi) |
-| Custom features | [Consulting](BUY-NOW.md) ($250/hour via grabrfi) |
+| Priority support | [Monthly via PayPal](BUY-NOW.md) ($50/month) |
+| Enterprise use | [Commercial license](BUY-NOW.md) ($2,500 one-time via PayPal) |
+| Custom features | [Consulting](BUY-NOW.md) ($250/hour via PayPal) |
 
 See [SUPPORT.md](SUPPORT.md) for full support details.
 
