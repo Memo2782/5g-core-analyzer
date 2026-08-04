@@ -451,7 +451,7 @@ RESULT_HTML_TEMPLATE = """
                                 mostrarDiagnostico(txt);
                             }});
                         }}
-                        var errorMatch = txt.match(/ERROR Code (\d+)/);
+                        var errorMatch = txt.match(/ERROR Code (\\d+)/);
                         if (errorMatch && errorMap) {{
                             let code = errorMatch[1];
                             if (errorMap[code]) {{
