@@ -15,7 +15,7 @@ jobs:
           echo "Deployment detected - Environment: $ENV, License present: $LICENSE_FLAG"
           
           if [ "$LICENSE_FLAG" = "false" ] && [ "$ENV" = "aws" ]; then
-            echo "::warning ::⚠️ COMMERCIAL ADOPTION DETECTED: AWS deployment without commercial license file. Send invoice via grabrfi."
+            echo "::warning ::⚠️ COMMERCIAL ADOPTION DETECTED: AWS deployment without commercial license file. Send invoice via PayPal."
           fi
           
           if [ "$LICENSE_FLAG" = "false" ] && [ "$ENV" = "local/docker" ]; then
