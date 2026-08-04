@@ -1,6 +1,6 @@
 # Buy Now — Commercial Licenses & Support
 
-## Monthly Subscriptions (Recommended)
+## Monthly Subscriptions
 
 ### Pro Tier
 - **Price**: $50/month
@@ -9,7 +9,7 @@
   - Early access to new features
   - Monthly feature releases
   - Access to private beta repository
-- **[Subscribe via GitHub Sponsors](https://github.com/sponsors/Memo2782)** (select recurring payment)
+- **[Subscribe via grabrfi](https://grabrfi.com/pay/$xhaq3x?amount=50&frequency=monthly)**
 
 ### Enterprise Tier
 - **Price**: $500/month (billed annually at $5,000)
@@ -27,12 +27,12 @@
 - **Price**: $2,500 (≈ MXN $45,000 at current exchange)
 - **Includes**: 1 year of updates and support
 - **Renewal**: $500/year (optional, for continued updates)
-- **[Pay via PayPal](https://www.paypal.com/paypalme/Memo2782/2500usd)** (supports MXN, cards, and PayPal balance)
+- **[Pay via grabrfi](https://grabrfi.com/pay/$xhaq3x?amount=2500)**
 
 ### Consulting Hour
 - **Price**: $250/hour (≈ MXN $4,500 at current exchange)
 - **Includes**: Custom feature development, integration assistance, or troubleshooting
-- **[Pay via PayPal](https://www.paypal.com/paypalme/Memo2782/250usd)**
+- **[Pay via grabrfi](https://grabrfi.com/pay/$xhaq3x?amount=250)**
 
 ## AWS Marketplace
 
@@ -43,9 +43,9 @@ If you prefer AWS billing:
 
 ## How Purchases Work
 
-1. **GitHub Sponsors**: Click the Sponsors link, sign in with GitHub, choose monthly or one-time, and GitHub handles the billing (works with Mexican bank accounts)
-2. **PayPal**: Click the PayPal link, pay with any method (credit card, debit card, PayPal balance, Spei - works for MX bank accounts)
-3. **Enterprise**: Email sales@Memo2782.github.io for a custom quote
+1. **grabrfi**: Click the grabrfi link, pay with any method (credit card, debit card, SPEI, OXXO - works for MX bank accounts)
+2. **Enterprise**: Email sales@Memo2782.github.io for a custom quote
+3. **License delivery**: After payment, email `license@Memo2782.github.io` with your transaction ID for license delivery
 
 ## Questions
 

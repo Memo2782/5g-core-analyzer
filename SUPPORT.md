@@ -12,7 +12,7 @@ For dedicated support, feature requests, and priority access, choose a tier:
 
 | Tier | Price | How |
 |------|-------|-----|
-| **Pro** | $50/month | [PayPal.Me/Memo2782](https://www.paypal.com/paypalme/Memo2782) |
+| **Pro** | $50/month | [grabrfi](https://grabrfi.com/pay/$xhaq3x?amount=50&frequency=monthly) |
 | **Enterprise** | $500/month | Email sales@Memo2782.github.io for invoice |
 
 Contact: support@Memo2782.github.io
@@ -21,17 +21,17 @@ Contact: support@Memo2782.github.io
 For commercial production use, a commercial license is required.
 
 - **Perpetual license**: $2,500 (includes 1 year of updates and support)
-  - Pay via [PayPal](https://www.paypal.com/paypalme/Memo2782/2500usd) (supports MXN)
+  - Pay via [grabrfi](https://grabrfi.com/pay/$xhaq3x?amount=2500)
   - License delivered via email after payment
 - **Annual renewal**: $500/year (optional, for continued updates)
-  - Pay via [PayPal](https://www.paypal.com/paypalme/Memo2782/500usd)
+  - Pay via [grabrfi](https://grabrfi.com/pay/$xhaq3x?amount=500)
 
 Contact: license@Memo2782.github.io
 
 ## Support Process
 
 1. **Free tier**: Open a GitHub Issue or Discussion
-2. **Paid tiers**: Email support@Memo2782.github.io with your tier reference
+2. **Paid tiers**: Email support@Memo2782.github.io with your grabrfi transaction ID
 3. **Enterprise**: Contact sales@Memo2782.github.io for a custom quote
 
 ## What's Covered
