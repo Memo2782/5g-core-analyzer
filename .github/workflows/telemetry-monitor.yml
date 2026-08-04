@@ -1,0 +1,40 @@
+name: Telemetry Monitor
+
+on:
+  repository_dispatch:
+    types: [5g-analyzer-deploy]
+
+jobs:
+  log-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log deployment
+        run: |
+          LICENSE_FLAG="${{ github.event.client_payload.license_present }}"
+          ENV="${{ github.event.client_payload.environment }}"
+          echo "Deployment detected - Environment: $ENV, License present: $LICENSE_FLAG"
+          
+          if [ "$LICENSE_FLAG" = "false" ] && [ "$ENV" = "aws" ]; then
+            echo "::warning ::⚠️ COMMERCIAL ADOPTION DETECTED: AWS deployment without commercial license file. Send invoice via grabrfi."
+          fi
+          
+          if [ "$LICENSE_FLAG" = "false" ] && [ "$ENV" = "local/docker" ]; then
+            echo "::notice ::📋 Local deployment without commercial license (likely personal use)."
+          fi
+          
+          if [ "$LICENSE_FLAG" = "true" ]; then
+            echo "✅ Commercial license verified in use."
+          fi
+
+      - name: Write to deployment log
+        run: |
+          echo "$(date -Iseconds) | ${{ github.event.client_payload.environment }} | license=${{ github.event.client_payload.license_present }}" >> deployments.log
+
+      - name: Commit log (if enabled)
+        if: github.repository == 'Memo2782/5g-core-analyzer'
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add deployments.log 2>/dev/null || true
+          git commit -m "Telemetry: log new deployment" --allow-empty || true
+          git push || true
