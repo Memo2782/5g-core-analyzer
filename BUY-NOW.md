@@ -9,7 +9,7 @@
   - Early access to new features
   - Monthly feature releases
   - Access to private beta repository
-- **[Subscribe via PayPal](https://www.paypal.com/paypalme/Memo2782/50usd)** (recurring)
+- **[Subscribe via PayPal](https://www.paypal.com/paypalme/morpheusthechoice/50usd)** (recurring)
 
 ### Enterprise Tier
 - **Price**: $500/month (billed annually at $5,000)
@@ -27,12 +27,12 @@
 - **Price**: $2,500 (≈ MXN $45,000 at current exchange)
 - **Includes**: 1 year of updates and support
 - **Renewal**: $500/year (optional, for continued updates)
-- **[Pay via PayPal](https://www.paypal.com/paypalme/Memo2782/2500usd)** (supports MXN, SPEI, cards)
+- **[Pay via PayPal](https://www.paypal.com/paypalme/morpheusthechoice/2500usd)** (supports MXN, SPEI, cards)
 
 ### Consulting Hour
 - **Price**: $250/hour (≈ MXN $4,500 at current exchange)
 - **Includes**: Custom feature development, integration assistance, or troubleshooting
-- **[Pay via PayPal](https://www.paypal.com/paypalme/Memo2782/250usd)**
+- **[Pay via PayPal](https://www.paypal.com/paypalme/morpheusthechoice/250usd)**
 
 ## AWS Marketplace
 
