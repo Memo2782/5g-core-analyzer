@@ -21,3 +21,4 @@ uploads/
 .vscode/
 .idea/
 .DS_Store
+*.db
