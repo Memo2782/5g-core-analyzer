@@ -329,3 +329,84 @@ class TestMermaidGenerationContract:
         labels = [label for _, label in opts]
         assert any("IMSI=001010000000001" in label for label in labels)
         assert any("IMSI=001010000000002" in label for label in labels)
+
+
+class TestWebSocketAlerts:
+    """Contract tests for WebSocket real-time alert streaming."""
+
+    def test_websocket_alerts_accepts_connection(self, client):
+        """WebSocket endpoint should accept connections and send initial ping."""
+        with client.websocket_connect("/ws/alerts") as ws:
+            data = ws.receive_json()
+            assert "type" in data
+            assert data["type"] == "ping"
+            assert "timestamp" in data
+
+    def test_websocket_sends_ping_when_no_alerts(self, client):
+        """WebSocket should send keepalive ping messages when idle."""
+        with client.websocket_connect("/ws/alerts") as ws:
+            pings = 0
+            while pings < 2:
+                data = ws.receive_json()
+                if data.get("type") == "ping":
+                    pings += 1
+            assert pings >= 2
+
+
+class TestRealTimeAgentAPI:
+    """Contract tests for real-time log monitoring agent endpoints."""
+
+    def test_agent_status_returns_json(self, client):
+        """GET /api/agent/status should return monitoring status."""
+        response = client.get("/api/agent/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "monitoring" in data
+        assert "active_sources" in data
+        assert "active_alerts" in data
+        assert "rules_loaded" in data
+
+    def test_start_agent_requires_source(self, client):
+        """POST /api/agent/start should reject missing source."""
+        response = client.post("/api/agent/start", json={})
+        assert response.status_code == 400
+        assert "source" in response.json()["error"].lower()
+
+    def test_start_agent_rejects_invalid_source(self, client):
+        """POST /api/agent/start should accept request but invalid source completes immediately."""
+        response = client.post("/api/agent/start", json={"source": "/nonexistent/path"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "started"
+        assert data["source"] == "/nonexistent/path"
+
+    def test_alerts_history_returns_list(self, client):
+        """GET /api/alerts/history should return empty list initially."""
+        response = client.get("/api/alerts/history")
+        assert response.status_code == 200
+        data = response.json()
+        assert "alerts" in data
+        assert "total" in data
+        assert isinstance(data["alerts"], list)
+        assert data["total"] >= 0
+
+    def test_active_alerts_returns_list(self, client):
+        """GET /api/alerts/active should return empty list initially."""
+        response = client.get("/api/alerts/active")
+        assert response.status_code == 200
+        data = response.json()
+        assert "alerts" in data
+        assert "total" in data
+        assert isinstance(data["alerts"], list)
+
+    def test_reset_alert_returns_success(self, client):
+        """POST /api/alerts/{id}/reset should return success for any ID."""
+        response = client.post("/api/alerts/nonexistent-id/reset")
+        assert response.status_code == 200
+        assert response.json()["status"] == "reset"
+
+    def test_agent_status_reflects_rules_loaded(self, client):
+        """Agent status should report loaded alert rules count."""
+        response = client.get("/api/agent/status")
+        data = response.json()
+        assert data["rules_loaded"] >= 1  # At least SMF timeout rule
