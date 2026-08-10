@@ -4,14 +4,18 @@ import json
 import shutil
 import asyncio
 import uuid
+import secrets
 from typing import List, Dict, Any
-from fastapi import FastAPI, File, UploadFile, Request, WebSocket, WebSocketDisconnect
+from sqlalchemy.orm import Session
+from fastapi import FastAPI, File, UploadFile, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.websockets import WebSocketState
 from core.pcap_parser import PcapCoreParser
 from core.log_processor import CoreLogProcessor
 from core.log_agent import LogAgent
 from core.notifier import Notifier
+from core.database import get_db, Tenant, AlertRecord, init_db, SessionLocal, PlanType, User
+from core.auth import get_current_tenant, TenantContext, hash_api_key, generate_api_key, verify_password, create_access_token
 from reports.excel_generator import CoreExcelGenerator
 
 try:
@@ -51,6 +55,7 @@ async def _send_telemetry():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     await _send_telemetry()
     yield
 
@@ -1018,3 +1023,119 @@ async def get_agent_status():
         "total_alerts": len(log_agent.alert_history),
         "rules_loaded": len(log_agent.rules)
     })
+
+
+# ==================== MULTI-TENANT AUTH ENDPOINTS ====================
+
+@app.post("/api/auth/register")
+async def register_tenant(request: Request, db: Session = Depends(get_db)):
+    """Create a new tenant with API key."""
+    try:
+        body = await request.json()
+        name = body.get("name", "").strip()
+        email = body.get("email", "").strip()
+        plan = body.get("plan", "starter")
+        
+        if not name or not email:
+            return JSONResponse(
+                content={"error": "name and email are required"},
+                status_code=400
+            )
+        
+        slug = name.lower().replace(" ", "-")[:50]
+        existing = db.query(Tenant).filter(Tenant.slug == slug).first()
+        if existing:
+            slug = f"{slug}-{secrets.token_hex(4)}"
+        
+        raw_key = generate_api_key()
+        tenant = Tenant(
+            id=f"tenant-{secrets.token_hex(8)}",
+            name=name,
+            slug=slug,
+            plan=PlanType(plan),
+            api_key=hash_api_key(raw_key),
+        )
+        db.add(tenant)
+        db.commit()
+        db.refresh(tenant)
+        
+        raw_key = generate_api_key()
+        
+        return JSONResponse(content={
+            "tenant_id": tenant.id,
+            "name": tenant.name,
+            "plan": tenant.plan,
+            "api_key": raw_key,
+            "message": "Save this API key - it will not be shown again"
+        })
+    
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.post("/api/auth/login")
+async def login(request: Request, db: Session = Depends(get_db)):
+    """Exchange email/password for JWT access token."""
+    try:
+        body = await request.json()
+        email = body.get("email", "").strip()
+        password = body.get("password", "")
+        
+        if not email or not password:
+            return JSONResponse(
+                content={"error": "email and password are required"},
+                status_code=400
+            )
+        
+        user = db.query(User).filter(User.email == email, User.active == True).first()
+        if not user or not verify_password(password, user.hashed_password):
+            return JSONResponse(
+                content={"error": "Invalid credentials"},
+                status_code=401
+            )
+        
+        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+        if not tenant or not tenant.active:
+            return JSONResponse(
+                content={"error": "Tenant inactive"},
+                status_code=403
+            )
+        
+        token = create_access_token(data={
+            "tenant_id": tenant.id,
+            "user_id": user.id,
+            "email": user.email,
+        })
+        
+        return JSONResponse(content={
+            "access_token": token,
+            "token_type": "bearer",
+            "tenant_id": tenant.id,
+            "plan": tenant.plan
+        })
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.get("/api/tenant/me")
+async def get_current_tenant_info(tenant_ctx: TenantContext = Depends(get_current_tenant), db: Session = Depends(get_db)):
+    """Get current tenant info (requires auth)."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_ctx.tenant_id).first()
+    if not tenant:
+        return JSONResponse(content={"error": "Tenant not found"}, status_code=404)
+    
+    return JSONResponse(content={
+        "tenant_id": tenant.id,
+        "name": tenant.name,
+        "plan": tenant.plan,
+        "active": tenant.active,
+        "created_at": tenant.created_at.isoformat() if tenant.created_at else None,
+    })
+
+
+@app.get("/api/admin/init")
+async def init_database():
+    """Initialize database tables (dev only)."""
+    init_db()
+    return JSONResponse(content={"status": "initialized", "database": DATABASE_URL})
