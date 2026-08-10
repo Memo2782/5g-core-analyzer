@@ -1,0 +1,120 @@
+{
+  "rules": [
+    {
+      "id": "smf_timeout_burst",
+      "name": "SMF Timeout Burst",
+      "description": "Detect >5 5xx responses from SMF within 60 seconds",
+      "node": "SMF",
+      "interface": "N11",
+      "condition": {
+        "field": "http_status",
+        "operator": "in",
+        "values": ["500", "502", "503", "504"]
+      },
+      "threshold": {
+        "count": 5,
+        "window_seconds": 60
+      },
+      "severity": "critical",
+      "notify": ["slack", "email"],
+      "message": "SMF timeout burst detected: {count} failures in {window}s. Check UPF connectivity."
+    },
+    {
+      "id": "ausf_auth_failure",
+      "name": "AUSF Authentication Failure Rate",
+      "description": "Detect >3 401/403 responses from AUSF within 120 seconds",
+      "node": "AUSF",
+      "interface": "N12",
+      "condition": {
+        "field": "http_status",
+        "operator": "in",
+        "values": ["401", "403"]
+      },
+      "threshold": {
+        "count": 3,
+        "window_seconds": 120
+      },
+      "severity": "critical",
+      "notify": ["slack", "whatsapp"],
+      "message": "AUSF auth failure spike: {count} auth rejections in {window}s. Possible credential attack or key sync issue."
+    },
+    {
+      "id": "pcf_session_anomaly",
+      "name": "PCF Session Anomaly",
+      "description": "Detect unexpected PCF interactions or session failures",
+      "node": "PCF",
+      "interface": "N5",
+      "condition": {
+        "field": "http_status",
+        "operator": "in",
+        "values": ["404", "500", "503"]
+      },
+      "threshold": {
+        "count": 2,
+        "window_seconds": 90
+      },
+      "severity": "warning",
+      "notify": ["email"],
+      "message": "PCF session anomaly: {count} failures in {window}s. Check PCF policy rules."
+    },
+    {
+      "id": "udm_subscription_not_found",
+      "name": "UDM Subscription Not Found",
+      "description": "Detect 404 responses from UDM indicating missing subscriber profiles",
+      "node": "UDM",
+      "interface": "N8",
+      "condition": {
+        "field": "http_status",
+        "operator": "eq",
+        "value": "404"
+      },
+      "threshold": {
+        "count": 3,
+        "window_seconds": 180
+      },
+      "severity": "critical",
+      "notify": ["slack", "email", "whatsapp"],
+      "message": "UDM subscription not found: {count} 404s in {window}s. Check subscriber provisioning."
+    },
+    {
+      "id": "amf_n2_accept_missing",
+      "name": "AMF N2 Accept Missing",
+      "description": "Detect missing N2 Accept responses after Registration Request",
+      "node": "AMF",
+      "interface": "N2",
+      "condition": {
+        "field": "procedure",
+        "operator": "eq",
+        "value": "N2 Registration"
+      },
+      "threshold": {
+        "count": 5,
+        "window_seconds": 120,
+        "require_response": false
+      },
+      "severity": "warning",
+      "notify": ["email"],
+      "message": "AMF N2 registration pending: {count} registrations without N2 Accept in {window}s."
+    },
+    {
+      "id": "ims_sip_error_rate",
+      "name": "IMS SIP Error Rate",
+      "description": "Detect high SIP 4xx/5xx error rate from PCSCF",
+      "node": "PCSCF",
+      "interface": "Gm/Mw",
+      "condition": {
+        "field": "http_status",
+        "operator": "regex",
+        "pattern": "4[0-9]{2}|5[0-9]{2}"
+      },
+      "threshold": {
+        "count": 10,
+        "window_seconds": 300,
+        "error_rate_percent": 20
+      },
+      "severity": "critical",
+      "notify": ["slack", "email"],
+      "message": "IMS SIP error rate high: {count} errors ({rate}%) in {window}s from PCSCF."
+    }
+  ]
+}

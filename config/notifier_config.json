@@ -1,0 +1,18 @@
+{
+  "enabled_channels": ["email", "slack"],
+  "email": {
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "smtp_user": "your-email@gmail.com",
+    "smtp_pass": "your-app-password",
+    "to_email": "noc@company.com"
+  },
+  "slack": {
+    "webhook_url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+  },
+  "whatsapp": {
+    "phone_number_id": "YOUR_PHONE_NUMBER_ID",
+    "access_token": "YOUR_ACCESS_TOKEN",
+    "to_number": "5215555555555"
+  }
+}

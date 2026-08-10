@@ -5,10 +5,13 @@ import shutil
 import asyncio
 import uuid
 from typing import List, Dict, Any
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.websockets import WebSocketState
 from core.pcap_parser import PcapCoreParser
 from core.log_processor import CoreLogProcessor
+from core.log_agent import LogAgent
+from core.notifier import Notifier
 from reports.excel_generator import CoreExcelGenerator
 
 try:
@@ -55,6 +58,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="5G E2E Multi-Trace Correlator SaaS", lifespan=lifespan)
 
 trace_store: Dict[str, Dict[str, Any]] = {}
+
+# Real-time monitoring components
+log_agent = LogAgent()
+notifier = Notifier()
+active_monitors: Dict[str, asyncio.Task] = {}
 
 _IP_TO_NODE = {
     "10.100.9.99": "UE",
@@ -880,3 +888,119 @@ async def get_trace(trace_id: str):
         if trace_id in cf_map:
             return JSONResponse(content=cf_map[trace_id])
     return JSONResponse(content={"error": "Call flow not found. Upload traces first."}, status_code=404)
+
+
+# ==================== REAL-TIME MONITORING ENDPOINTS ====================
+
+@app.websocket("/ws/alerts")
+async def websocket_alerts(websocket: WebSocket):
+    """WebSocket endpoint for real-time alert streaming."""
+    await websocket.accept()
+    queue = log_agent.subscribe()
+    
+    try:
+        while True:
+            # Wait for alerts from the log agent
+            alert = await queue.get()
+            await websocket.send_json(alert)
+    except WebSocketDisconnect:
+        log_agent.unsubscribe(queue)
+    except Exception:
+        log_agent.unsubscribe(queue)
+
+
+@app.post("/api/agent/start")
+async def start_agent(request: Request):
+    """Start real-time log monitoring from a file or directory."""
+    try:
+        body = await request.json()
+        source = body.get("source", "")
+        
+        if not source:
+            return JSONResponse(
+                content={"error": "Missing 'source' parameter (file path or directory)"},
+                status_code=400
+            )
+        
+        # Stop any existing monitor for this source
+        if source in active_monitors:
+            active_monitors[source].cancel()
+        
+        # Start new monitor
+        task = asyncio.create_task(log_agent.start_monitoring(source))
+        active_monitors[source] = task
+        
+        return JSONResponse(content={
+            "status": "started",
+            "source": source,
+            "message": f"Monitoring started: {source}"
+        })
+    
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.post("/api/agent/stop")
+async def stop_agent(request: Request):
+    """Stop real-time log monitoring."""
+    try:
+        body = await request.json()
+        source = body.get("source", "")
+        
+        if source in active_monitors:
+            active_monitors[source].cancel()
+            del active_monitors[source]
+            return JSONResponse(content={"status": "stopped", "source": source})
+        
+        # Stop all monitors if no source specified
+        if not source:
+            for src, task in list(active_monitors.items()):
+                task.cancel()
+            active_monitors.clear()
+            log_agent.stop()
+            return JSONResponse(content={"status": "stopped", "source": "all"})
+        
+        return JSONResponse(
+            content={"error": f"No monitor running for: {source}"},
+            status_code=404
+        )
+    
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.get("/api/alerts/history")
+async def get_alert_history(limit: int = 100):
+    """Get recent alert history."""
+    return JSONResponse(content={
+        "alerts": log_agent.get_alert_history(limit),
+        "total": len(log_agent.alert_history)
+    })
+
+
+@app.get("/api/alerts/active")
+async def get_active_alerts():
+    """Get currently active alerts."""
+    return JSONResponse(content={
+        "alerts": log_agent.get_active_alerts(),
+        "total": len(log_agent.active_alerts)
+    })
+
+
+@app.post("/api/alerts/{alert_id}/reset")
+async def reset_alert(alert_id: str):
+    """Reset an active alert to allow re-triggering."""
+    log_agent.reset_alert(alert_id)
+    return JSONResponse(content={"status": "reset", "alert_id": alert_id})
+
+
+@app.get("/api/agent/status")
+async def get_agent_status():
+    """Get current monitoring status."""
+    return JSONResponse(content={
+        "monitoring": log_agent.running,
+        "active_sources": list(active_monitors.keys()),
+        "active_alerts": len(log_agent.active_alerts),
+        "total_alerts": len(log_agent.alert_history),
+        "rules_loaded": len(log_agent.rules)
+    })
