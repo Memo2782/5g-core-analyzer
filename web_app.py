@@ -866,6 +866,13 @@ async def procesar_multiples_pcaps(files: List[UploadFile] = File(...)):
     )
 
 
+@app.get("/test-websocket", response_class=HTMLResponse)
+async def test_websocket():
+    """Test page for WebSocket alert streaming."""
+    with open("test_websocket.html", "r") as f:
+        return f.read()
+
+
 @app.get("/api/call-flows")
 async def list_call_flows():
     """List available call flows from the most recent upload."""
@@ -899,13 +906,20 @@ async def websocket_alerts(websocket: WebSocket):
     queue = log_agent.subscribe()
     
     try:
-        while True:
-            # Wait for alerts from the log agent
-            alert = await queue.get()
-            await websocket.send_json(alert)
+        while websocket.client_state == WebSocketState.CONNECTED:
+            try:
+                alert = await asyncio.wait_for(queue.get(), timeout=5.0)
+                await websocket.send_json(alert)
+            except asyncio.TimeoutError:
+                await websocket.send_json({
+                    "type": "ping",
+                    "timestamp": __import__("datetime").datetime.utcnow().isoformat() + "Z",
+                    "message": "No alerts yet. Start monitoring with POST /api/agent/start"
+                })
     except WebSocketDisconnect:
         log_agent.unsubscribe(queue)
-    except Exception:
+    except Exception as e:
+        print(f"[!] WebSocket error: {e}")
         log_agent.unsubscribe(queue)
 
 

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; }
+        #alerts { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        .alert { padding: 10px; margin: 5px 0; border-left: 4px solid #dc3545; background: #2a2a2a; }
+        .alert.warning { border-color: #ffc107; }
+        .alert.info { border-color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <h1>5G Core Alert Stream Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="alerts"></div>
+    
+    <script>
+        const ws = new WebSocket('ws://' + location.host + '/ws/alerts');
+        const alertsDiv = document.getElementById('alerts');
+        const statusDiv = document.getElementById('status');
+        
+        ws.onopen = () => {
+            statusDiv.innerHTML = '<span style="color:#51cf66;">✅ Connected to alert stream</span>';
+            statusDiv.innerHTML += '<br><button onclick="startMonitoring()">Start Monitoring</button>';
+        };
+        
+        ws.onmessage = (event) => {
+            const alert = JSON.parse(event.data);
+            const div = document.createElement('div');
+            div.className = 'alert ' + alert.severity;
+            div.innerHTML = `<strong>${alert.rule_name}</strong><br>${alert.message}<br><small>${alert.timestamp}</small>`;
+            alertsDiv.insertBefore(div, alertsDiv.firstChild);
+        };
+        
+        ws.onerror = (error) => {
+            statusDiv.innerHTML = '<span style="color:#ff6b6b;">❌ WebSocket error</span>';
+        };
+        
+        ws.onclose = () => {
+            statusDiv.innerHTML = '<span style="color:#ffc107;">⚪ Disconnected</span>';
+        };
+        
+        async function startMonitoring() {
+            const response = await fetch('/api/agent/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({source: '/var/log/5g/'})
+            });
+            const result = await response.json();
+            alert(result.message);
+        }
+    </script>
+</body>
+</html>
