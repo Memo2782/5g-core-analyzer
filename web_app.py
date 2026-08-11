@@ -356,6 +356,12 @@ DASHBOARD_HTML = """
         .upload-box:hover { background: #252525; border-color: #0098ff; }
         input[type="file"] { display: none; }
         .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; }
+        .alerts-panel { margin-top: 30px; text-align: left; }
+        .alert-item { padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid #dc3545; background: #2a2a2a; }
+        .alert-item.warning { border-left-color: #ffc107; }
+        .alert-item.info { border-left-color: #17a2b8; }
+        .alert-title { font-weight: bold; color: #ff9999; margin-bottom: 6px; }
+        .alert-meta { font-size: 12px; color: #aaa; }
     </style>
 </head>
 <body>
@@ -369,8 +375,60 @@ DASHBOARD_HTML = """
                 <input id="file-upload" type="file" name="files" accept=".pcap,.pcapng" multiple="multiple" onchange="this.form.submit()"/>
             </label>
         </form>
+        <div class="alerts-panel">
+            <h2 style="color:#007acc;">🚨 Real-Time Alerts</h2>
+            <div id="realtime-alerts">Connecting to alert stream...</div>
+        </div>
         <div class="footer">Ecosistema de Diagnóstico Experto 3GPP via SSH</div>
     </div>
+
+    <script>
+        (function() {
+            var alertsDiv = document.getElementById('realtime-alerts');
+            var ws = new WebSocket('ws://' + location.host + '/ws/alerts');
+            var seen = new Set();
+
+            ws.onopen = function() {
+                alertsDiv.innerHTML = '<div class="alert-item info"><div class="alert-title">Connected</div><div class="alert-meta">Waiting for alerts...</div></div>';
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    var data = JSON.parse(event.data);
+                    if (data.type === 'ping') return;
+                    if (seen.has(data.id)) return;
+                    seen.add(data.id);
+
+                    var item = document.createElement('div');
+                    item.className = 'alert-item';
+                    if (data.severity === 'warning') item.className += ' warning';
+                    if (data.severity === 'info') item.className += ' info';
+
+                    item.innerHTML = '<div class="alert-title">' + (data.rule_name || data.type || 'Alert') + '</div>' +
+                        '<div>' + (data.message || '') + '</div>' +
+                        '<div class="alert-meta">' + (data.node || '') + ' | ' + (data.timestamp || '') + '</div>';
+
+                    if (alertsDiv.children.length === 1 && alertsDiv.children[0].textContent.includes('Connected')) {
+                        alertsDiv.innerHTML = '';
+                    }
+                    alertsDiv.insertBefore(item, alertsDiv.firstChild);
+                } catch (e) {
+                    console.error('Alert parse error', e);
+                }
+            };
+
+            ws.onerror = function() {
+                alertsDiv.innerHTML = '<div class="alert-item"><div class="alert-title">WebSocket error</div></div>';
+            };
+
+            ws.onclose = function() {
+                var item = document.createElement('div');
+                item.className = 'alert-item';
+                item.innerHTML = '<div class="alert-title">Disconnected</div><div class="alert-meta">Will reconnect when server is ready.</div>';
+                alertsDiv.insertBefore(item, alertsDiv.firstChild);
+            };
+        })();
+    </script>
 </body>
 </html>
 """
