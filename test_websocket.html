@@ -25,10 +25,12 @@
         };
         
         ws.onmessage = (event) => {
-            const alert = JSON.parse(event.data);
+            const data = JSON.parse(event.data);
+            if (data.type === 'ping') return;
+            const alert = data;
             const div = document.createElement('div');
-            div.className = 'alert ' + alert.severity;
-            div.innerHTML = `<strong>${alert.rule_name}</strong><br>${alert.message}<br><small>${alert.timestamp}</small>`;
+            div.className = 'alert ' + (alert.severity || '');
+            div.innerHTML = `<strong>${alert.rule_name || alert.type || 'Alert'}</strong><br>${alert.message || ''}<br><small>${alert.timestamp || ''}</small>`;
             alertsDiv.insertBefore(div, alertsDiv.firstChild);
         };
         
