@@ -214,3 +214,69 @@ class Notifier:
         </html>
         """
         return html
+
+    async def send_license_email(self, to_email: str, license_text: str, plan: str, transaction_id: str):
+        """Send LICENSE-ENTERPRISE.txt to customer after payment."""
+        try:
+            email_config = self.config.get("email", {})
+            smtp_host = email_config.get("smtp_host", "")
+            smtp_port = email_config.get("smtp_port", 587)
+            smtp_user = email_config.get("smtp_user", "")
+            smtp_pass = email_config.get("smtp_pass", "")
+            
+            if not all([smtp_host, smtp_user, smtp_pass]):
+                print("[!] Email config incomplete, skipping license email")
+                return
+            
+            subject = f"Your 5G Core Analyzer {plan.title()} License - Transaction {transaction_id}"
+            
+            html_body = f"""
+            <html>
+            <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #e0e0e0; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 12px; border: 1px solid #333;">
+                    <div style="background: #51cf66; color: white; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">Payment Confirmed - License Activated</h2>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <p style="font-size: 16px; line-height: 1.6;">
+                            Thank you for purchasing the <strong>{plan.title()}</strong> license for 5G Core Analyzer.
+                            Your payment has been confirmed and your license is attached below.
+                        </p>
+                    </div>
+                    <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h3 style="color: #51cf66; margin-top: 0;">License Details</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr><td style="padding: 8px; color: #888;"><strong>Plan</strong></td><td style="padding: 8px;">{plan.title()}</td></tr>
+                            <tr><td style="padding: 8px; color: #888;"><strong>Transaction ID</strong></td><td style="padding: 8px;">{transaction_id}</td></tr>
+                            <tr><td style="padding: 8px; color: #888;"><strong>License Type</strong></td><td style="padding: 8px;">Commercial / Production</td></tr>
+                        </table>
+                    </div>
+                    <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h3 style="color: #ffc107; margin-top: 0;">LICENSE-ENTERPRISE.txt</h3>
+                        <pre style="background: #121212; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px;">{license_text}</pre>
+                    </div>
+                    <div style="font-size: 12px; color: #666; text-align: center;">
+                        Questions? Contact support@Memo2782.github.io
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            msg = MIMEMultipart()
+            msg["From"] = smtp_user
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            msg.attach(MIMEText(html_body, "html"))
+            
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                self._smtp_send,
+                smtp_host, smtp_port, smtp_user, smtp_pass,
+                smtp_user, to_email, msg
+            )
+            print(f"[+] License email sent to {to_email} for plan {plan}")
+            
+        except Exception as e:
+            print(f"[!] Failed to send license email: {e}")

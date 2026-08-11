@@ -1243,6 +1243,26 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
                 
                 db.commit()
                 
+                # Send license email if payer_email is available
+                if payer_email:
+                    try:
+                        license_path = os.path.join(os.path.dirname(__file__), "LICENSE-ENTERPRISE.txt")
+                        license_text = ""
+                        if os.path.exists(license_path):
+                            with open(license_path, "r") as f:
+                                license_text = f.read()
+                        
+                        notifier = Notifier()
+                        plan_name = tenant.plan.value if hasattr(tenant.plan, 'value') else str(tenant.plan)
+                        await notifier.send_license_email(
+                            to_email=payer_email,
+                            license_text=license_text,
+                            plan=plan_name,
+                            transaction_id=transaction_id
+                        )
+                    except Exception as e:
+                        print(f"[!] Failed to send license email: {e}")
+                
                 return JSONResponse(content={
                     "status": "activated",
                     "tenant_id": tenant.id,
