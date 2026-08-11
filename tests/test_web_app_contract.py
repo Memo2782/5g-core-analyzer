@@ -453,3 +453,57 @@ class TestRealTimeAgentAPI:
         })
         assert response.status_code == 200
         return response.json()["api_key"]
+
+
+class TestBillingEndpoints:
+    """Contract tests for billing and subscription endpoints."""
+
+    def _register_and_get_key(self, client) -> str:
+        """Helper to register a tenant and return API key."""
+        response = client.post("/api/auth/register", json={
+            "name": f"Billing Test {id(self)}",
+            "email": f"billing-{id(self)}@test.com",
+            "plan": "starter"
+        })
+        assert response.status_code == 200
+        return response.json()["api_key"]
+
+    def test_plans_endpoint_returns_list(self, client):
+        """GET /api/billing/plans should return available plans."""
+        response = client.get("/api/billing/plans")
+        assert response.status_code == 200
+        data = response.json()
+        assert "plans" in data
+        assert len(data["plans"]) >= 3
+        plan_ids = [p["id"] for p in data["plans"]]
+        assert "starter" in plan_ids
+        assert "pro" in plan_ids
+        assert "enterprise" in plan_ids
+
+    def test_checkout_requires_auth(self, client):
+        """GET /api/billing/checkout should require authentication."""
+        response = client.get("/api/billing/checkout?plan=starter")
+        assert response.status_code == 401
+
+    def test_checkout_returns_url_when_authenticated(self, client):
+        """GET /api/billing/checkout should return PayPal URL with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.get("/api/billing/checkout?plan=starter", headers={"X-API-Key": api_key})
+        assert response.status_code == 200
+        data = response.json()
+        assert "checkout_url" in data
+        assert "paypal.com" in data["checkout_url"]
+        assert data["plan"] == "starter"
+
+    def test_subscription_status_requires_auth(self, client):
+        """GET /api/billing/subscription should require authentication."""
+        response = client.get("/api/billing/subscription")
+        assert response.status_code == 401
+
+    def test_subscription_status_returns_none_initially(self, client):
+        """GET /api/billing/subscription should return none when no subscription."""
+        api_key = self._register_and_get_key(client)
+        response = client.get("/api/billing/subscription", headers={"X-API-Key": api_key})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["subscription"] is None

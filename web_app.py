@@ -5,7 +5,7 @@ import shutil
 import asyncio
 import uuid
 import secrets
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, File, UploadFile, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -14,7 +14,7 @@ from core.pcap_parser import PcapCoreParser
 from core.log_processor import CoreLogProcessor
 from core.log_agent import LogAgent
 from core.notifier import Notifier
-from core.database import get_db, Tenant, AlertRecord, init_db, SessionLocal, PlanType, User
+from core.database import get_db, Tenant, AlertRecord, Subscription, init_db, SessionLocal, PlanType, User
 from core.auth import get_current_tenant, TenantContext, hash_api_key, generate_api_key, verify_password, create_access_token
 from reports.excel_generator import CoreExcelGenerator
 
@@ -929,7 +929,7 @@ async def websocket_alerts(websocket: WebSocket):
 
 
 @app.post("/api/agent/start")
-async def start_agent(request: Request, tenant_ctx: TenantContext = Depends(get_current_tenant)):
+async def start_agent(request: Request, tenant_ctx: TenantContext = Depends(get_current_tenant), db: Session = Depends(get_db)):
     """Start real-time log monitoring from a file or directory."""
     try:
         body = await request.json()
@@ -946,6 +946,14 @@ async def start_agent(request: Request, tenant_ctx: TenantContext = Depends(get_
         monitor_key = f"{tenant_id}:{source}"
         if monitor_key in active_monitors:
             active_monitors[monitor_key].cancel()
+        
+        # Check plan limits
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if tenant:
+            current_sites = len([k for k in active_monitors if k.startswith(f"{tenant_id}:")])
+            limit_error = _check_plan_limit(tenant, "sites", current_sites)
+            if limit_error:
+                return limit_error
         
         # Start new monitor with tenant context
         task = asyncio.create_task(log_agent.start_monitoring(source, tenant_id=tenant_id))
@@ -1149,3 +1157,168 @@ async def init_database():
     """Initialize database tables (dev only)."""
     init_db()
     return JSONResponse(content={"status": "initialized", "database": DATABASE_URL})
+
+
+# ==================== BILLING & SUBSCRIPTION ENDPOINTS ====================
+
+PLAN_LIMITS = {
+    "starter": {"sites": 1, "events_per_day": 5000},
+    "pro": {"sites": 5, "events_per_day": 50000},
+    "enterprise": {"sites": -1, "events_per_day": -1},
+}
+
+
+def _check_plan_limit(tenant: Tenant, limit_type: str, current_count: int) -> Optional[JSONResponse]:
+    """Check if tenant has exceeded plan limits. Returns error response or None if OK."""
+    limits = PLAN_LIMITS.get(tenant.plan.value, PLAN_LIMITS["starter"])
+    limit = limits.get(limit_type, -1)
+    
+    if limit == -1:
+        return None  # Unlimited
+    
+    if current_count >= limit:
+        return JSONResponse(content={
+            "error": f"Plan limit exceeded: {limit_type} limit is {limit} for {tenant.plan.value} plan. Upgrade at /api/billing/checkout",
+            "limit": limit,
+            "current": current_count,
+            "plan": tenant.plan.value
+        }, status_code=403)
+    
+    return None
+
+
+@app.get("/api/billing/checkout")
+async def get_checkout_url(plan: str = "starter", tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """Get PayPal checkout URL for a plan upgrade."""
+    plan_urls = {
+        "starter": "https://www.paypal.com/paypalme/morpheusthechoice/50usd",
+        "pro": "https://www.paypal.com/paypalme/morpheusthechoice/799usd",
+        "enterprise": "https://www.paypal.com/paypalme/morpheusthechoice/2499usd",
+        "perpetual": "https://www.paypal.com/paypalme/morpheusthechoice/2500usd",
+    }
+    
+    if plan not in plan_urls:
+        return JSONResponse(content={"error": "Invalid plan"}, status_code=400)
+    
+    return JSONResponse(content={
+        "checkout_url": plan_urls[plan],
+        "plan": plan,
+        "tenant_id": tenant_ctx.tenant_id,
+        "message": f"Complete payment at the URL, then email transaction ID to license@Memo2782.github.io for activation"
+    })
+
+
+@app.post("/api/webhook/paypal")
+async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
+    """PayPal webhook to verify payments and activate subscriptions."""
+    try:
+        body = await request.json()
+        event_type = body.get("event_type", "")
+        
+        # Verify webhook signature in production
+        # For now, accept test/sandbox webhooks
+        
+        if event_type == "PAYMENT.SALE.COMPLETED":
+            transaction_id = body.get("resource", {}).get("id", "")
+            amount = body.get("resource", {}).get("amount", {}).get("total", "0")
+            currency = body.get("resource", {}).get("amount", {}).get("currency", "USD")
+            payer_email = body.get("resource", {}).get("payer", {}).get("payer_info", {}).get("email", "")
+            
+            # Find tenant by email or custom field
+            tenant = db.query(Tenant).filter(Tenant.active == True).first()
+            if tenant:
+                # Update or create subscription
+                subscription = db.query(Subscription).filter(Subscription.tenant_id == tenant.id).first()
+                if not subscription:
+                    subscription = Subscription(
+                        id=f"sub-{secrets.token_hex(8)}",
+                        tenant_id=tenant.id,
+                        paypal_subscription_id=transaction_id,
+                        status="active",
+                    )
+                    db.add(subscription)
+                else:
+                    subscription.paypal_subscription_id = transaction_id
+                    subscription.status = "active"
+                
+                db.commit()
+                
+                return JSONResponse(content={
+                    "status": "activated",
+                    "tenant_id": tenant.id,
+                    "transaction_id": transaction_id,
+                    "amount": f"{amount} {currency}"
+                })
+        
+        return JSONResponse(content={"status": "ignored", "event_type": event_type})
+    
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.get("/api/billing/subscription")
+async def get_subscription_status(tenant_ctx: TenantContext = Depends(get_current_tenant), db: Session = Depends(get_db)):
+    """Get current tenant's subscription status."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_ctx.tenant_id).first()
+    if not tenant:
+        return JSONResponse(content={"error": "Tenant not found"}, status_code=404)
+    
+    subscription = db.query(Subscription).filter(Subscription.tenant_id == tenant.id).first()
+    
+    return JSONResponse(content={
+        "tenant_id": tenant.id,
+        "plan": tenant.plan,
+        "active": tenant.active,
+        "subscription": {
+            "id": subscription.id if subscription else None,
+            "status": subscription.status if subscription else "none",
+            "paypal_id": subscription.paypal_subscription_id if subscription else None,
+            "current_period_start": subscription.current_period_start.isoformat() if subscription and subscription.current_period_start else None,
+            "current_period_end": subscription.current_period_end.isoformat() if subscription and subscription.current_period_end else None,
+        } if subscription else None
+    })
+
+
+@app.get("/api/billing/plans")
+async def get_available_plans():
+    """Get available pricing plans."""
+    return JSONResponse(content={
+        "plans": [
+            {
+                "id": "starter",
+                "name": "Starter",
+                "price": 50,
+                "currency": "USD",
+                "interval": "month",
+                "limits": {"sites": 1, "events_per_day": 5000},
+                "features": ["Email support", "1 site", "5K events/day"]
+            },
+            {
+                "id": "pro",
+                "name": "Pro",
+                "price": 799,
+                "currency": "USD",
+                "interval": "month",
+                "limits": {"sites": 5, "events_per_day": 50000},
+                "features": ["Priority support", "5 sites", "50K events/day", "Slack channel"]
+            },
+            {
+                "id": "enterprise",
+                "name": "Enterprise",
+                "price": 2499,
+                "currency": "USD",
+                "interval": "month",
+                "limits": {"sites": -1, "events_per_day": -1},
+                "features": ["24/7 support", "Unlimited sites", "Unlimited events", "White-label", "SLA"]
+            },
+            {
+                "id": "perpetual",
+                "name": "Perpetual License",
+                "price": 2500,
+                "currency": "USD",
+                "interval": "one-time",
+                "limits": {"sites": -1, "events_per_day": -1},
+                "features": ["Lifetime license", "1 year updates", "Commercial use", "Email support"]
+            }
+        ]
+    })
