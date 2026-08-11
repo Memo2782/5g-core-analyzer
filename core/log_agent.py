@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
 from core.log_processor import CoreLogProcessor
+from core.database import AlertRecord, get_db
 
 
 class Alert:
     """Represents a triggered alert rule."""
     def __init__(self, rule_id: str, rule_name: str, severity: str, 
                  message: str, count: int, window_seconds: int, 
-                 node: str, interface: str, evidence: List[Dict]):
+                 node: str, interface: str, evidence: List[Dict], tenant_id: str = ""):
         self.rule_id = rule_id
         self.rule_name = rule_name
         self.severity = severity
@@ -25,6 +26,7 @@ class Alert:
         self.node = node
         self.interface = interface
         self.evidence = evidence
+        self.tenant_id = tenant_id
         self.timestamp = datetime.utcnow().isoformat() + "Z"
         self.id = f"alert-{int(time.time()*1000)}-{hash(self.timestamp) % 10000:04d}"
 
@@ -173,12 +175,100 @@ class LogAgent:
         
         return triggered_alerts
     
-    async def process_event(self, event: Dict):
+    async def process_event(self, event: Dict, tenant_id: str = ""):
         """Process a single log event through alert rules."""
         alerts = self._evaluate_rules(event)
         for alert in alerts:
+            alert.tenant_id = tenant_id
             await self._broadcast(alert)
             await self._send_notifications(alert)
+            self._persist_alert(alert)
+    
+    def _persist_alert(self, alert: Alert):
+        """Persist alert to database if tenant_id is set."""
+        if not alert.tenant_id:
+            return
+        try:
+            db = next(get_db())
+            record = AlertRecord(
+                id=alert.id,
+                tenant_id=alert.tenant_id,
+                rule_id=alert.rule_id,
+                rule_name=alert.rule_name,
+                severity=alert.severity,
+                message=alert.message,
+                count=alert.count,
+                window_seconds=alert.window_seconds,
+                node=alert.node,
+                interface=alert.interface,
+                evidence=json.dumps(alert.evidence),
+            )
+            db.add(record)
+            db.commit()
+        except Exception as e:
+            print(f"[!] Failed to persist alert: {e}")
+    
+    def get_alert_history(self, tenant_id: str = "", limit: int = 100) -> List[Dict]:
+        """Get recent alert history, optionally filtered by tenant."""
+        if tenant_id:
+            try:
+                db = next(get_db())
+                records = (
+                    db.query(AlertRecord)
+                    .filter(AlertRecord.tenant_id == tenant_id)
+                    .order_by(AlertRecord.created_at.desc())
+                    .limit(limit)
+                    .all()
+                )
+                return [
+                    {
+                        "id": r.id,
+                        "rule_id": r.rule_id,
+                        "rule_name": r.rule_name,
+                        "severity": r.severity,
+                        "message": r.message,
+                        "count": r.count,
+                        "window_seconds": r.window_seconds,
+                        "node": r.node,
+                        "interface": r.interface,
+                        "timestamp": r.created_at.isoformat() + "Z",
+                        "acknowledged": r.acknowledged,
+                    }
+                    for r in records
+                ]
+            except Exception as e:
+                print(f"[!] Failed to load alert history: {e}")
+        
+        return [a.to_dict() for a in self.alert_history[-limit:]]
+    
+    def get_active_alerts(self, tenant_id: str = "") -> List[Dict]:
+        """Get currently active alerts, optionally filtered by tenant."""
+        if tenant_id:
+            try:
+                db = next(get_db())
+                records = (
+                    db.query(AlertRecord)
+                    .filter(AlertRecord.tenant_id == tenant_id, AlertRecord.acknowledged == False)
+                    .all()
+                )
+                return [
+                    {
+                        "id": r.id,
+                        "rule_id": r.rule_id,
+                        "rule_name": r.rule_name,
+                        "severity": r.severity,
+                        "message": r.message,
+                        "count": r.count,
+                        "node": r.node,
+                        "interface": r.interface,
+                        "timestamp": r.created_at.isoformat() + "Z",
+                    }
+                    for r in records
+                ]
+            except Exception as e:
+                print(f"[!] Failed to load active alerts: {e}")
+        
+        return [a.to_dict() for a in self.active_alerts.values()]
     
     async def _send_notifications(self, alert: Alert):
         """Send notifications via configured channels."""
@@ -258,10 +348,10 @@ class LogAgent:
                     print(f"[!] Error reading file: {e}")
                     tasks.remove(task)
     
-    async def start_monitoring(self, source: str):
+    async def start_monitoring(self, source: str, tenant_id: str = ""):
         """Start monitoring logs from a file or directory."""
         self.running = True
-        print(f"[+] Starting log monitoring: {source}")
+        print(f"[+] Starting log monitoring: {source} (tenant={tenant_id or 'global'})")
         
         path = Path(source)
         if path.is_file():
@@ -276,21 +366,13 @@ class LogAgent:
             if not self.running:
                 break
             
-            # Process event through alert rules
-            await self.process_event(event)
+            # Process event through alert rules with tenant context
+            await self.process_event(event, tenant_id=tenant_id)
     
     def stop(self):
         """Stop monitoring."""
         self.running = False
         print("[+] Log monitoring stopped")
-    
-    def get_alert_history(self, limit: int = 100) -> List[Dict]:
-        """Get recent alert history."""
-        return [a.to_dict() for a in self.alert_history[-limit:]]
-    
-    def get_active_alerts(self) -> List[Dict]:
-        """Get currently active alerts."""
-        return [a.to_dict() for a in self.active_alerts.values()]
     
     def reset_alert(self, alert_id: str):
         """Reset an active alert to allow re-triggering."""

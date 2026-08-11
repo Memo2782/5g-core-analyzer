@@ -929,11 +929,12 @@ async def websocket_alerts(websocket: WebSocket):
 
 
 @app.post("/api/agent/start")
-async def start_agent(request: Request):
+async def start_agent(request: Request, tenant_ctx: TenantContext = Depends(get_current_tenant)):
     """Start real-time log monitoring from a file or directory."""
     try:
         body = await request.json()
         source = body.get("source", "")
+        tenant_id = tenant_ctx.tenant_id
         
         if not source:
             return JSONResponse(
@@ -941,17 +942,19 @@ async def start_agent(request: Request):
                 status_code=400
             )
         
-        # Stop any existing monitor for this source
-        if source in active_monitors:
-            active_monitors[source].cancel()
+        # Stop any existing monitor for this source+tenant
+        monitor_key = f"{tenant_id}:{source}"
+        if monitor_key in active_monitors:
+            active_monitors[monitor_key].cancel()
         
-        # Start new monitor
-        task = asyncio.create_task(log_agent.start_monitoring(source))
-        active_monitors[source] = task
+        # Start new monitor with tenant context
+        task = asyncio.create_task(log_agent.start_monitoring(source, tenant_id=tenant_id))
+        active_monitors[monitor_key] = task
         
         return JSONResponse(content={
             "status": "started",
             "source": source,
+            "tenant_id": tenant_id,
             "message": f"Monitoring started: {source}"
         })
     
@@ -960,23 +963,26 @@ async def start_agent(request: Request):
 
 
 @app.post("/api/agent/stop")
-async def stop_agent(request: Request):
+async def stop_agent(request: Request, tenant_ctx: TenantContext = Depends(get_current_tenant)):
     """Stop real-time log monitoring."""
     try:
         body = await request.json()
         source = body.get("source", "")
+        tenant_id = tenant_ctx.tenant_id
         
-        if source in active_monitors:
-            active_monitors[source].cancel()
-            del active_monitors[source]
-            return JSONResponse(content={"status": "stopped", "source": source})
+        if source:
+            monitor_key = f"{tenant_id}:{source}"
+            if monitor_key in active_monitors:
+                active_monitors[monitor_key].cancel()
+                del active_monitors[monitor_key]
+                return JSONResponse(content={"status": "stopped", "source": source})
         
-        # Stop all monitors if no source specified
+        # Stop all monitors for this tenant
         if not source:
-            for src, task in list(active_monitors.items()):
-                task.cancel()
-            active_monitors.clear()
-            log_agent.stop()
+            keys_to_remove = [k for k in active_monitors if k.startswith(f"{tenant_id}:")]
+            for key in keys_to_remove:
+                active_monitors[key].cancel()
+                del active_monitors[key]
             return JSONResponse(content={"status": "stopped", "source": "all"})
         
         return JSONResponse(
@@ -989,20 +995,24 @@ async def stop_agent(request: Request):
 
 
 @app.get("/api/alerts/history")
-async def get_alert_history(limit: int = 100):
-    """Get recent alert history."""
+async def get_alert_history(limit: int = 100, tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """Get recent alert history for the current tenant."""
+    alerts = log_agent.get_alert_history(tenant_id=tenant_ctx.tenant_id, limit=limit)
     return JSONResponse(content={
-        "alerts": log_agent.get_alert_history(limit),
-        "total": len(log_agent.alert_history)
+        "alerts": alerts,
+        "total": len(alerts),
+        "tenant_id": tenant_ctx.tenant_id
     })
 
 
 @app.get("/api/alerts/active")
-async def get_active_alerts():
-    """Get currently active alerts."""
+async def get_active_alerts(tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """Get currently active alerts for the current tenant."""
+    alerts = log_agent.get_active_alerts(tenant_id=tenant_ctx.tenant_id)
     return JSONResponse(content={
-        "alerts": log_agent.get_active_alerts(),
-        "total": len(log_agent.active_alerts)
+        "alerts": alerts,
+        "total": len(alerts),
+        "tenant_id": tenant_ctx.tenant_id
     })
 
 
@@ -1014,14 +1024,16 @@ async def reset_alert(alert_id: str):
 
 
 @app.get("/api/agent/status")
-async def get_agent_status():
-    """Get current monitoring status."""
+async def get_agent_status(tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """Get current monitoring status for the current tenant."""
+    tenant_monitors = [k for k in active_monitors if k.startswith(f"{tenant_ctx.tenant_id}:")]
     return JSONResponse(content={
         "monitoring": log_agent.running,
-        "active_sources": list(active_monitors.keys()),
+        "active_sources": tenant_monitors,
         "active_alerts": len(log_agent.active_alerts),
         "total_alerts": len(log_agent.alert_history),
-        "rules_loaded": len(log_agent.rules)
+        "rules_loaded": len(log_agent.rules),
+        "tenant_id": tenant_ctx.tenant_id
     })
 
 
@@ -1058,8 +1070,6 @@ async def register_tenant(request: Request, db: Session = Depends(get_db)):
         db.add(tenant)
         db.commit()
         db.refresh(tenant)
-        
-        raw_key = generate_api_key()
         
         return JSONResponse(content={
             "tenant_id": tenant.id,

@@ -9,8 +9,8 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -29,7 +29,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Security schemes
 bearer_scheme = HTTPBearer(auto_error=False)
-api_key_scheme = APIKeyHeader(auto_error=False, name="X-API-Key")
 
 
 class TenantContext:
@@ -89,17 +88,18 @@ def _resolve_tenant_from_token(db: Session, payload: dict) -> Optional[Tenant]:
 
 
 def get_tenant_from_api_key(
-    credentials: Optional[str] = Depends(api_key_scheme),
+    request: Request,
     db: Session = Depends(get_db),
 ) -> Optional[TenantContext]:
-    if not credentials:
+    raw_key = request.headers.get("x-api-key")
+    if not raw_key:
         return None
-    tenant = _resolve_tenant_by_api_key(db, credentials)
+    tenant = _resolve_tenant_by_api_key(db, raw_key)
     if not tenant:
         return None
     return TenantContext(
         tenant_id=tenant.id,
-        api_key=credentials,
+        api_key=raw_key,
         plan=tenant.plan,
     )
 
@@ -107,25 +107,15 @@ def get_tenant_from_api_key(
 def get_tenant_from_bearer(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: Session = Depends(get_db),
-) -> TenantContext:
+) -> Optional[TenantContext]:
     if not credentials or not credentials.credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing bearer token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
     payload = decode_access_token(credentials.credentials)
     if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-        )
+        return None
     tenant = _resolve_tenant_from_token(db, payload)
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Tenant not found or inactive",
-        )
+        return None
     return TenantContext(
         tenant_id=tenant.id,
         api_key="",

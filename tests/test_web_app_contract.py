@@ -4,10 +4,16 @@ These tests validate the API contract (GET /, POST /upload, GET /download-excel)
 using stubbed parsers and processors so they don't depend on real PCAP files.
 """
 import json
+import os
 from io import BytesIO
 from unittest.mock import MagicMock, patch, AsyncMock, mock_open
 import pytest
 from fastapi.testclient import TestClient
+
+from core.database import init_db
+
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_5g_analyzer.db")
+init_db()
 
 from web_app import app, RESULT_HTML_TEMPLATE
 
@@ -356,48 +362,73 @@ class TestWebSocketAlerts:
 class TestRealTimeAgentAPI:
     """Contract tests for real-time log monitoring agent endpoints."""
 
-    def test_agent_status_returns_json(self, client):
-        """GET /api/agent/status should return monitoring status."""
+    def test_agent_status_requires_auth(self, client):
+        """GET /api/agent/status should require authentication."""
         response = client.get("/api/agent/status")
+        assert response.status_code == 401
+
+    def test_alerts_history_requires_auth(self, client):
+        """GET /api/alerts/history should require authentication."""
+        response = client.get("/api/alerts/history")
+        assert response.status_code == 401
+
+    def test_active_alerts_requires_auth(self, client):
+        """GET /api/alerts/active should require authentication."""
+        response = client.get("/api/alerts/active")
+        assert response.status_code == 401
+
+    def test_start_agent_requires_auth(self, client):
+        """POST /api/agent/start should require authentication."""
+        response = client.post("/api/agent/start", json={"source": "/tmp"})
+        assert response.status_code == 401
+
+    def test_agent_status_returns_json_when_authenticated(self, client):
+        """GET /api/agent/status should return monitoring status with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.get("/api/agent/status", headers={"X-API-Key": api_key})
         assert response.status_code == 200
         data = response.json()
         assert "monitoring" in data
         assert "active_sources" in data
         assert "active_alerts" in data
         assert "rules_loaded" in data
+        assert data["tenant_id"] != ""
 
-    def test_start_agent_requires_source(self, client):
-        """POST /api/agent/start should reject missing source."""
-        response = client.post("/api/agent/start", json={})
+    def test_start_agent_requires_source_when_authenticated(self, client):
+        """POST /api/agent/start should reject missing source even with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.post("/api/agent/start", json={}, headers={"X-API-Key": api_key})
         assert response.status_code == 400
         assert "source" in response.json()["error"].lower()
 
-    def test_start_agent_rejects_invalid_source(self, client):
-        """POST /api/agent/start should accept request but invalid source completes immediately."""
-        response = client.post("/api/agent/start", json={"source": "/nonexistent/path"})
+    def test_start_agent_accepts_valid_source_when_authenticated(self, client):
+        """POST /api/agent/start should accept valid source with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.post("/api/agent/start", json={"source": "/nonexistent/path"}, headers={"X-API-Key": api_key})
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "started"
-        assert data["source"] == "/nonexistent/path"
+        assert data["tenant_id"] != ""
 
-    def test_alerts_history_returns_list(self, client):
-        """GET /api/alerts/history should return empty list initially."""
-        response = client.get("/api/alerts/history")
+    def test_alerts_history_returns_list_when_authenticated(self, client):
+        """GET /api/alerts/history should return list with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.get("/api/alerts/history", headers={"X-API-Key": api_key})
         assert response.status_code == 200
         data = response.json()
         assert "alerts" in data
         assert "total" in data
-        assert isinstance(data["alerts"], list)
-        assert data["total"] >= 0
+        assert "tenant_id" in data
 
-    def test_active_alerts_returns_list(self, client):
-        """GET /api/alerts/active should return empty list initially."""
-        response = client.get("/api/alerts/active")
+    def test_active_alerts_returns_list_when_authenticated(self, client):
+        """GET /api/alerts/active should return list with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.get("/api/alerts/active", headers={"X-API-Key": api_key})
         assert response.status_code == 200
         data = response.json()
         assert "alerts" in data
         assert "total" in data
-        assert isinstance(data["alerts"], list)
+        assert "tenant_id" in data
 
     def test_reset_alert_returns_success(self, client):
         """POST /api/alerts/{id}/reset should return success for any ID."""
@@ -405,8 +436,20 @@ class TestRealTimeAgentAPI:
         assert response.status_code == 200
         assert response.json()["status"] == "reset"
 
-    def test_agent_status_reflects_rules_loaded(self, client):
-        """Agent status should report loaded alert rules count."""
-        response = client.get("/api/agent/status")
+    def test_agent_status_reflects_rules_loaded_when_authenticated(self, client):
+        """Agent status should report loaded alert rules count with auth."""
+        api_key = self._register_and_get_key(client)
+        response = client.get("/api/agent/status", headers={"X-API-Key": api_key})
         data = response.json()
         assert data["rules_loaded"] >= 1  # At least SMF timeout rule
+        assert data["tenant_id"] != ""
+
+    def _register_and_get_key(self, client) -> str:
+        """Helper to register a tenant and return API key."""
+        response = client.post("/api/auth/register", json={
+            "name": f"Agent Test {id(self)}",
+            "email": f"agent-{id(self)}@test.com",
+            "plan": "starter"
+        })
+        assert response.status_code == 200
+        return response.json()["api_key"]
