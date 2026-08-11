@@ -22,7 +22,6 @@
         
         ws.onopen = () => {
             statusDiv.innerHTML = '<span style="color:#51cf66;">✅ Connected to alert stream</span>';
-            statusDiv.innerHTML += '<br><button onclick="startMonitoring()">Start Monitoring</button>';
         };
         
         ws.onmessage = (event) => {
@@ -40,16 +39,6 @@
         ws.onclose = () => {
             statusDiv.innerHTML = '<span style="color:#ffc107;">⚪ Disconnected</span>';
         };
-        
-        async function startMonitoring() {
-            const response = await fetch('/api/agent/start', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({source: '/var/log/5g/'})
-            });
-            const result = await response.json();
-            alert(result.message);
-        }
     </script>
 </body>
 </html>
