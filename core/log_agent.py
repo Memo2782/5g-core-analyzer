@@ -127,13 +127,15 @@ class LogAgent:
         operator = condition.get("operator", "eq")
         
         if operator == "eq":
-            return str(event.get(field, "")) == str(condition.get("value", ""))
+            result = str(event.get(field, "")) == str(condition.get("value", ""))
         elif operator == "in":
-            return str(event.get(field, "")) in [str(v) for v in condition.get("values", [])]
+            result = str(event.get(field, "")) in [str(v) for v in condition.get("values", [])]
         elif operator == "regex":
             pattern = condition.get("pattern", "")
-            return bool(re.search(pattern, str(event.get(field, ""))))
-        return False
+            result = bool(re.search(pattern, str(event.get(field, ""))))
+        else:
+            result = False
+        return result
     
     def _evaluate_rules(self, event: Dict) -> List[Alert]:
         """Evaluate event against all alert rules."""
