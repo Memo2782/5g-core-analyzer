@@ -55,14 +55,17 @@ jobs:
           git clone --depth 1 https://github.com/Borjis131/docker-open5gs.git
           ls -la docker-open5gs/
 
-      - name: Apply UPF fix (devices + pfcp client)
+      - name: Create docker-compose.yml with correct paths and UPF fix
         run: |
-          # Add /dev/net/tun device to UPF in docker-compose.yml
           cd /tmp/docker-open5gs
-          # Update upf.yaml with pfcp.client.smf
-          cat configs/metrics/upf.yaml
-          # Fix SCP config volume mount path
+          pip install pyyaml
+          cp compose-files/basic/docker-compose-prebuilt.yaml docker-compose.yml
+          # Fix config paths: prebuilt uses configs/open5gs/ which doesn't exist, actual configs are in configs/metrics/
+          sed -i 's|./configs/open5gs/|./configs/metrics/|g' docker-compose.yml
+          # Fix SCP config: configs/metrics/scp.yaml is an empty directory, use correct model-c path
           sed -i 's|./configs/metrics/scp.yaml:/etc/open5gs/custom/scp.yaml|./configs/scp/model-c/scp.yaml:/etc/open5gs/custom/scp.yaml|' docker-compose.yml
+          # Add UPF device/sysctl/capacity for proper N4/GTP-U tunnel setup
+          python3 -c "import yaml; compose=yaml.safe_load(open('docker-compose.yml')); upf=compose['services']['upf']; upf.setdefault('devices',[]).append('/dev/net/tun:/dev/net/tun'); upf.setdefault('sysctls',[]).append('net.ipv4.ip_forward=1'); upf.setdefault('cap_add',[]).append('NET_ADMIN'); f=open('docker-compose.yml','w'); yaml.dump(compose,f,default_flow_style=False,sort_keys=False); f.close(); print('UPF devices/sysctls/cap_add added')"
 
       - name: Create UERANSIM configs
         run: |
@@ -157,20 +160,6 @@ jobs:
               name: docker-open5gs_open5gs
           EOF
 
-      - name: Create UPF override
-        run: |
-          cat > /tmp/docker-open5gs/docker-compose.upf-fix.yml << 'OVERRIDE'
-          version: '3.8'
-          services:
-            upf:
-              devices:
-                - /dev/net/tun:/dev/net/tun
-              sysctls:
-                - net.ipv4.ip_forward=1
-              cap_add:
-                - NET_ADMIN
-          OVERRIDE
-
       - name: Create MongoDB init script
         run: |
           cat > /tmp/docker-open5gs/mongo-init.js << 'MONGOJS'
@@ -243,7 +232,6 @@ jobs:
         working-directory: /tmp/docker-open5gs
         run: |
           docker compose up -d
-          docker compose -f docker-compose.upf-fix.yml up -d upf
           sleep 30
 
       - name: Initialize MongoDB subscribers
@@ -308,7 +296,6 @@ jobs:
         working-directory: /tmp/docker-open5gs
         run: |
           docker compose up -d
-          docker compose -f docker-compose.upf-fix.yml up -d upf
           sleep 30
 
       - name: Initialize MongoDB subscribers
@@ -356,7 +343,6 @@ jobs:
         working-directory: /tmp/docker-open5gs
         run: |
           docker compose up -d
-          docker compose -f docker-compose.upf-fix.yml up -d upf
           docker compose -f ueransim-compose.yml up -d gnb ue
           sleep 30
 
