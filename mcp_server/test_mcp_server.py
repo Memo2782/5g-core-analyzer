@@ -34,6 +34,7 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 MCP_SERVER = SCRIPT_DIR / "server.py"
+OPEN5GS_LOG_DIR = os.environ.get("OPEN5GS_LOG_DIR", str(PROJECT_ROOT / ".." / "docker-open5gs" / "logs"))
 
 GREEN = "\033[0;32m"
 RED = "\033[0;31m"
@@ -72,6 +73,10 @@ async def main():
         command=sys.executable,
         args=[str(MCP_SERVER)],
         cwd=str(PROJECT_ROOT),
+        env={
+            "OPEN5GS_LOG_DIR": OPEN5GS_LOG_DIR,
+            "PROJECT_ROOT": str(PROJECT_ROOT),
+        },
     )
 
     print(f"{YELLOW}Starting MCP server...{NC}")

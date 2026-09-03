@@ -74,7 +74,15 @@ pass "Containers started"
 # ── 2. Verify UE registration ────────────────────────────────────────────────
 info "Restarting UE for fresh registration..."
 docker restart ue 2>&1
-sleep 15
+info "Waiting for UE re-registration (up to 45s)..."
+UE_REGISTERED=false
+for i in $(seq 1 15); do
+    sleep 3
+    if docker logs ue 2>&1 | tail -5 | grep -q "Initial Registration is successful"; then
+        UE_REGISTERED=true
+        break
+    fi
+done
 
 UE_LOG=$(docker logs ue 2>&1 | tail -8)
 if echo "$UE_LOG" | grep -q "Initial Registration is successful"; then
@@ -111,7 +119,7 @@ info "Waiting for initial log processing (15s)..."
 sleep 15
 
 BASE_ALERTS=$(get_alerts)
-BASE_SMF=$(curl -s -H "X-API-Key: ${API_KEY}" "${API_BASE}/api/agent/status" | python3 -c "import sys,json;print(json.load(sys.stdin)['debug']['alert_window_counts']['smf_timeout_burst'])")
+BASE_SMF=$(curl -s -H "X-API-Key: ${API_KEY}" "${API_BASE}/api/agent/status" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('debug',{}).get('alert_window_counts',{}).get('smf_timeout_burst',0))" 2>/dev/null || echo "0")
 info "Baseline: total_alerts=${BASE_ALERTS}, smf_window=${BASE_SMF}"
 info "Window counts after initial read:"
 get_window_counts
@@ -130,7 +138,7 @@ info "Waiting 8s for real-time detection..."
 sleep 8
 
 NEW_ALERTS=$(get_alerts)
-NEW_SMF=$(curl -s -H "X-API-Key: ${API_KEY}" "${API_BASE}/api/agent/status" | python3 -c "import sys,json;print(json.load(sys.stdin)['debug']['alert_window_counts']['smf_timeout_burst'])")
+NEW_SMF=$(curl -s -H "X-API-Key: ${API_KEY}" "${API_BASE}/api/agent/status" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('debug',{}).get('alert_window_counts',{}).get('smf_timeout_burst',0))" 2>/dev/null || echo "0")
 info "After injection: total_alerts=${NEW_ALERTS}, smf_window=${NEW_SMF}"
 
 if [ "${NEW_SMF}" -gt "${BASE_SMF}" ]; then

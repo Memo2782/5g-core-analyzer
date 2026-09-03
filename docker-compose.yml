@@ -47,7 +47,7 @@ services:
       - ./:/app
       - ./logs:/app/logs
       - ./data:/app/data
-      - /Users/guillermopineda/docker-open5gs/logs:/open5gs-logs:ro
+      - ${OPEN5GS_LOG_DIR:-/Users/guillermopineda/docker-open5gs/logs}:/open5gs-logs:ro
     depends_on:
       postgres:
         condition: service_healthy

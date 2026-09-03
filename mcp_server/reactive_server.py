@@ -73,72 +73,70 @@ async def tail_log_files():
     """Continuously monitor log files for new error patterns."""
     global last_known_sizes
 
-    log_files = list(OPEN5GS_LOG_DIR.glob("*.log")) if OPEN5GS_LOG_DIR.exists() else []
-    for f in log_files:
-        last_known_sizes[str(f)] = f.stat().st_size
-
     while True:
-        for log_file in log_files:
-            try:
+        try:
+            current_files = set(OPEN5GS_LOG_DIR.glob("*.log")) if OPEN5GS_LOG_DIR.exists() else set()
+            for log_file in current_files:
                 filepath = str(log_file)
-                current_size = log_file.stat().st_size
-                last_pos = last_known_sizes.get(filepath, 0)
+                try:
+                    current_size = log_file.stat().st_size
+                    last_pos = last_known_sizes.get(filepath, 0)
 
-                if current_size < last_pos:
-                    last_pos = 0
+                    if current_size < last_pos:
+                        last_pos = 0
+                        last_known_sizes[filepath] = 0
 
-                if current_size > last_pos:
-                    with open(filepath, "r") as f:
-                        f.seek(last_pos)
-                        new_content = f.read()
-                        last_known_sizes[filepath] = current_size
+                    if current_size > last_pos:
+                        with open(filepath, "r") as f:
+                            f.seek(last_pos)
+                            new_content = f.read()
+                            last_known_sizes[filepath] = current_size
 
-                    for line in new_content.strip().split("\n"):
-                        if not line.strip():
-                            continue
+                        for line in new_content.strip().split("\n"):
+                            if not line.strip():
+                                continue
 
-                        # Check each line against error patterns
-                        for pattern_name, pattern_info in ERROR_PATTERNS.items():
-                            check_texts = [pattern_name] + pattern_info.get("aliases", [])
-                            matched = any(
-                                ct.lower() in line.lower() for ct in check_texts
-                            )
-                            if matched and "ERROR" in line.upper():
-                                # Auto-diagnose
-                                causes = pattern_info["common_causes"]
-                                resolution = pattern_info["resolution_template"]
-
-                                alert = add_reactive_alert(
-                                    issue=f"{pattern_name} detected in {log_file.name}",
-                                    pattern=pattern_name,
-                                    details=line[:200],
-                                    status="detected",
+                            for pattern_name, pattern_info in ERROR_PATTERNS.items():
+                                check_texts = [pattern_name] + pattern_info.get("aliases", [])
+                                matched = any(
+                                    ct.lower() in line.lower() for ct in check_texts
                                 )
+                                if matched and "ERROR" in line.upper():
+                                    causes = pattern_info["common_causes"]
+                                    resolution = pattern_info["resolution_template"]
 
-                                print(f"[REACTIVE] Issue detected: {pattern_name}", file=sys.stderr)
-                                print(f"  Details: {line[:100]}", file=sys.stderr)
-                                print(f"  Suggested fix: {resolution}", file=sys.stderr)
-
-                                if auto_fix_enabled:
-                                    log_resolution(
-                                        action=f"Auto-fixed: {pattern_name}",
-                                        issue=pattern_name,
-                                        resolution=resolution,
-                                        result="Auto-applied - monitor for changes",
+                                    alert = add_reactive_alert(
+                                        issue=f"{pattern_name} detected in {log_file.name}",
+                                        pattern=pattern_name,
+                                        details=line[:200],
+                                        status="detected",
                                     )
-                                    alert["status"] = "auto-fixed"
-                                    print(f"[REACTIVE] Auto-fix applied for {pattern_name}", file=sys.stderr)
-                                else:
-                                    log_resolution(
-                                        action=f"Detected: {pattern_name}",
-                                        issue=pattern_name,
-                                        resolution=f"Suggested: {resolution}",
-                                        result="Pending manual review",
-                                    )
-                                    print(f"[REACTIVE] Fix suggested, awaiting manual review", file=sys.stderr)
 
-            except Exception as e:
-                print(f"[REACTIVE] Error tailing {log_file}: {e}", file=sys.stderr)
+                                    print(f"[REACTIVE] Issue detected: {pattern_name}", file=sys.stderr)
+                                    print(f"  Details: {line[:100]}", file=sys.stderr)
+                                    print(f"  Suggested fix: {resolution}", file=sys.stderr)
+
+                                    if auto_fix_enabled:
+                                        log_resolution(
+                                            action=f"Auto-fixed: {pattern_name}",
+                                            issue=pattern_name,
+                                            resolution=resolution,
+                                            result="Auto-applied - monitor for changes",
+                                        )
+                                        alert["status"] = "auto-fixed"
+                                        print(f"[REACTIVE] Auto-fix applied for {pattern_name}", file=sys.stderr)
+                                    else:
+                                        log_resolution(
+                                            action=f"Detected: {pattern_name}",
+                                            issue=pattern_name,
+                                            resolution=f"Suggested: {resolution}",
+                                            result="Pending manual review",
+                                        )
+                                        print(f"[REACTIVE] Fix suggested, awaiting manual review", file=sys.stderr)
+                except Exception as e:
+                    print(f"[REACTIVE] Error tailing {log_file}: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"[REACTIVE] Error scanning log directory: {e}", file=sys.stderr)
 
         await asyncio.sleep(0.5)
 

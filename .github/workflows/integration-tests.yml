@@ -392,6 +392,8 @@ jobs:
 
       - name: Start analyzer app
         working-directory: .
+        env:
+          OPEN5GS_LOG_DIR: /tmp/docker-open5gs/logs
         run: |
           docker compose -f docker-compose.yml up -d
           sleep 30
@@ -493,6 +495,15 @@ jobs:
           docker compose up -d
           docker compose -f ueransim-compose.yml up -d gnb ue
           sleep 30
+
+      - name: Initialize MongoDB subscribers
+        working-directory: /tmp/docker-open5gs
+        run: |
+          docker compose cp mongo-init.js db:/tmp/ 2>/dev/null || true
+          docker exec db mongosh --quiet --eval "load('/tmp/mongo-init.js')" open5gs 2>/dev/null || \
+          docker exec db mongo --quiet /tmp/mongo-init.js open5gs 2>/dev/null || \
+          docker exec db mongosh < /tmp/mongo-init.js 2>/dev/null || true
+          sleep 10
 
       - name: Set up Python 3.12 + MCP
         uses: actions/setup-python@v5

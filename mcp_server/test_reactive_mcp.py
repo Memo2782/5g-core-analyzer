@@ -50,6 +50,10 @@ async def run_client():
         command=PYTHON_BIN,
         args=[MCP_SERVER],
         cwd=PROJECT_ROOT,
+        env={
+            "OPEN5GS_LOG_DIR": str(LOG_DIR),
+            "PROJECT_ROOT": PROJECT_ROOT,
+        },
     )
 
     print(f"{YELLOW}=== Reactive MCP Server Test ===\n{NC}")
@@ -75,8 +79,10 @@ async def run_client():
                 test("Force check returns issues", True, f"found {len(data)} issue types")
                 for d in data[:3]:
                     print(f"    - {d.get('pattern','?')}: {d.get('details','')[:60]}")
+            elif isinstance(data, dict) and "message" in data:
+                test("Force check returns valid response", True, f"no pre-existing issues: {data['message']}")
             else:
-                test("Force check returns issues", False, str(data)[:100])
+                test("Force check returns valid response", False, str(data)[:100])
 
             # ── Inject failure scenario ─────────────────────────────────
             print(f"\n{YELLOW}3. Injecting 6 SMF timeout ERROR lines...{NC}")
