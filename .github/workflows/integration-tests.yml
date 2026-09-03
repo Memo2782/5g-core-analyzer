@@ -23,7 +23,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'unified' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'unit' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -55,12 +55,14 @@ jobs:
           git clone --depth 1 https://github.com/Borjis131/docker-open5gs.git
           ls -la docker-open5gs/
 
-      - name: Apply UPF fix (devices + pfcp client)
+       - name: Apply UPF fix (devices + pfcp client)
         run: |
           # Add /dev/net/tun device to UPF in docker-compose.yml
           cd /tmp/docker-open5gs
           # Update upf.yaml with pfcp.client.smf
           cat configs/metrics/upf.yaml
+          # Fix SCP config volume mount path
+          sed -i 's|./configs/metrics/scp.yaml:/etc/open5gs/custom/scp.yaml|./configs/scp/model-c/scp.yaml:/etc/open5gs/custom/scp.yaml|' docker-compose.yml
 
       - name: Create UERANSIM configs
         run: |
@@ -226,7 +228,7 @@ jobs:
     name: E2E 5G Network Test
     runs-on: ubuntu-latest
     needs: setup-5gc
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'e2e' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'e2e' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -291,7 +293,7 @@ jobs:
     name: MCP Server Tests
     runs-on: ubuntu-latest
     needs: setup-5gc
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'mcp' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'mcp' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -339,7 +341,7 @@ jobs:
     name: Reactive MCP Test
     runs-on: ubuntu-latest
     needs: setup-5gc
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'reactive' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'reactive' }}
 
     steps:
       - uses: actions/checkout@v5
