@@ -55,17 +55,156 @@ jobs:
           git clone --depth 1 https://github.com/Borjis131/docker-open5gs.git
           ls -la docker-open5gs/
 
-      - name: Create docker-compose.yml with correct paths and UPF fix
+      - name: Create docker-compose.yml
         run: |
           cd /tmp/docker-open5gs
-          pip install pyyaml
-          cp compose-files/basic/docker-compose-prebuilt.yaml docker-compose.yml
-          # Fix config paths: prebuilt uses configs/open5gs/ which doesn't exist, actual configs are in configs/metrics/
-          sed -i 's|./configs/open5gs/|./configs/metrics/|g' docker-compose.yml
-          # Fix SCP config: configs/metrics/scp.yaml is an empty directory, use correct model-c path
-          sed -i 's|./configs/metrics/scp.yaml:/etc/open5gs/custom/scp.yaml|./configs/scp/model-c/scp.yaml:/etc/open5gs/custom/scp.yaml|' docker-compose.yml
-          # Add UPF device/sysctl/capacity for proper N4/GTP-U tunnel setup
-          python3 -c "import yaml; compose=yaml.safe_load(open('docker-compose.yml')); upf=compose['services']['upf']; upf.setdefault('devices',[]).append('/dev/net/tun:/dev/net/tun'); upf.setdefault('sysctls',[]).append('net.ipv4.ip_forward=1'); upf.setdefault('cap_add',[]).append('NET_ADMIN'); f=open('docker-compose.yml','w'); yaml.dump(compose,f,default_flow_style=False,sort_keys=False); f.close(); print('UPF devices/sysctls/cap_add added')"
+          cat > docker-compose.yml << 'COMPOSE'
+          services:
+            db:
+              container_name: db
+              image: mongo:6.0
+              command: "mongod --bind_ip 0.0.0.0 --port 27017"
+              networks:
+                - open5gs
+              volumes:
+                - db_data:/data/db
+                - db_config:/data/configdb
+              ports:
+                - "27017:27017"
+            nrf:
+              container_name: nrf
+              image: borieher/nrf:v2.7.6
+              command: "-c /etc/open5gs/custom/nrf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/nrf.yaml:/etc/open5gs/custom/nrf.yaml
+              depends_on:
+                - db
+            ausf:
+              container_name: ausf
+              image: borieher/ausf:v2.7.6
+              command: "-c /etc/open5gs/custom/ausf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/ausf.yaml:/etc/open5gs/custom/ausf.yaml
+              depends_on:
+                - nrf
+            udm:
+              container_name: udm
+              image: borieher/udm:v2.7.6
+              command: "-c /etc/open5gs/custom/udm.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/udm.yaml:/etc/open5gs/custom/udm.yaml
+              depends_on:
+                - nrf
+            udr:
+              container_name: udr
+              image: borieher/udr:v2.7.6
+              command: "-c /etc/open5gs/custom/udr.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/udr.yaml:/etc/open5gs/custom/udr.yaml
+              depends_on:
+                - db
+                - nrf
+            pcf:
+              container_name: pcf
+              image: borieher/pcf:v2.7.6
+              command: "-c /etc/open5gs/custom/pcf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/pcf.yaml:/etc/open5gs/custom/pcf.yaml
+              depends_on:
+                - db
+                - nrf
+            amf:
+              container_name: amf
+              image: borieher/amf:v2.7.6
+              command: "-c /etc/open5gs/custom/amf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/amf.yaml:/etc/open5gs/custom/amf.yaml
+                - ./logs:/var/log/open5gs
+              depends_on:
+                - nrf
+                - ausf
+                - udm
+            smf:
+              container_name: smf
+              image: borieher/smf:v2.7.6
+              command: "-c /etc/open5gs/custom/smf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/smf.yaml:/etc/open5gs/custom/smf.yaml
+                - ./logs:/var/log/open5gs
+              depends_on:
+                - nrf
+                - udm
+                - pcf
+            upf:
+              container_name: upf
+              image: borieher/upf:v2.7.6
+              command: "-c /etc/open5gs/custom/upf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/upf.yaml:/etc/open5gs/custom/upf.yaml
+              devices:
+                - /dev/net/tun:/dev/net/tun
+              sysctls:
+                - net.ipv4.ip_forward=1
+              cap_add:
+                - NET_ADMIN
+              depends_on:
+                - smf
+            nssf:
+              container_name: nssf
+              image: borieher/nssf:v2.7.6
+              command: "-c /etc/open5gs/custom/nssf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/nssf.yaml:/etc/open5gs/custom/nssf.yaml
+              depends_on:
+                - nrf
+            bsf:
+              container_name: bsf
+              image: borieher/bsf:v2.7.6
+              command: "-c /etc/open5gs/custom/bsf.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/metrics/bsf.yaml:/etc/open5gs/custom/bsf.yaml
+              depends_on:
+                - nrf
+            scp:
+              container_name: scp
+              image: borieher/scp:v2.7.6
+              command: "-c /etc/open5gs/custom/scp.yaml"
+              networks:
+                - open5gs
+              volumes:
+                - ./configs/scp/model-c/scp.yaml:/etc/open5gs/custom/scp.yaml
+              depends_on:
+                - nrf
+          volumes:
+            db_data:
+            db_config:
+          networks:
+            open5gs:
+              driver: bridge
+          COMPOSE
+          echo "docker-compose.yml created"
+          # Verify required config files exist
+          ls -la configs/metrics/upf.yaml configs/metrics/amf.yaml configs/metrics/smf.yaml configs/scp/model-c/scp.yaml
 
       - name: Create UERANSIM configs
         run: |
