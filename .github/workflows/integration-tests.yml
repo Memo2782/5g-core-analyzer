@@ -401,6 +401,7 @@ jobs:
       - name: Wait for UE registration
         working-directory: /tmp/docker-open5gs
         run: |
+          sudo chmod -R a+rwX /tmp/docker-open5gs/logs/
           timeout 60 bash -c 'until docker logs ue 2>&1 | grep -q "Initial Registration is successful"; do sleep 2; done' && echo "UE registered" || echo "UE registration timed out"
 
       - name: Install zsh
@@ -504,6 +505,10 @@ jobs:
           docker exec db mongo --quiet /tmp/mongo-init.js open5gs 2>/dev/null || \
           docker exec db mongosh < /tmp/mongo-init.js 2>/dev/null || true
           sleep 10
+
+      - name: Make logs writable
+        run: |
+          sudo chmod -R a+rwX /tmp/docker-open5gs/logs/
 
       - name: Set up Python 3.12 + MCP
         uses: actions/setup-python@v5
