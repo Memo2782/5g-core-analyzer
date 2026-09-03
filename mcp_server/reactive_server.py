@@ -43,7 +43,7 @@ from server import (
 )
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path(__file__).resolve().parent.parent)))
-OPEN5GS_LOG_DIR = Path(os.environ.get("OPEN5GS_LOG_DIR", "/tmp/docker-open5gs/logs"))
+OPEN5GS_LOG_DIR = Path(os.environ.get("OPEN5GS_LOG_DIR", "/Users/guillermopineda/docker-open5gs/logs"))
 REACTIVE_LOG = PROJECT_ROOT / "mcp_server" / "reactive_alerts.jsonl"
 
 # Global state for reactive monitoring

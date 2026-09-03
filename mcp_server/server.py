@@ -35,7 +35,7 @@ from mcp.types import Tool, TextContent, ListToolsResult, CallToolRequestParams,
 
 # Configuration
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path(__file__).resolve().parent.parent)))
-OPEN5GS_LOG_DIR = Path(os.environ.get("OPEN5GS_LOG_DIR", "/tmp/docker-open5gs/logs"))
+OPEN5GS_LOG_DIR = Path(os.environ.get("OPEN5GS_LOG_DIR", "/Users/guillermopineda/docker-open5gs/logs"))
 RESOLUTION_LOG = PROJECT_ROOT / "mcp_server" / "resolution_log.jsonl"
 
 # Common 5G error patterns and resolutions
