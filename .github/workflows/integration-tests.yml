@@ -454,6 +454,9 @@ jobs:
           pip install mcp
 
       - name: Run MCP server tests
+        env:
+          OPEN5GS_LOG_DIR: /tmp/docker-open5gs/logs
+          PROJECT_ROOT: ${{ github.workspace }}
         run: |
           python3 mcp_server/test_mcp_server.py
 
@@ -496,6 +499,9 @@ jobs:
 
       - name: Run reactive MCP test
         working-directory: ${{ github.workspace }}
+        env:
+          OPEN5GS_LOG_DIR: /tmp/docker-open5gs/logs
+          PROJECT_ROOT: ${{ github.workspace }}
         run: |
           python3 mcp_server/test_reactive_mcp.py
 

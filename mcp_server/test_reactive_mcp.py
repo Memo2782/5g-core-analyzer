@@ -8,15 +8,17 @@ Usage:
 
 import asyncio
 import json
+import os
 import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
-MCP_SERVER = "/Users/guillermopineda/5g-core-analyzer/mcp_server/reactive_server.py"
-PYTHON_BIN = "/opt/homebrew/bin/python3.14"
-LOG_DIR = "/Users/guillermopineda/docker-open5gs/logs"
+MCP_SERVER = str(Path(__file__).resolve().parent / "reactive_server.py")
+PYTHON_BIN = sys.executable
+LOG_DIR = os.environ.get("OPEN5GS_LOG_DIR", "/Users/guillermopineda/docker-open5gs/logs")
+PROJECT_ROOT = os.environ.get("PROJECT_ROOT", str(Path(__file__).resolve().parent.parent))
 
 GREEN = "\033[0;32m"
 RED = "\033[0;31m"
@@ -47,7 +49,7 @@ async def run_client():
     server_params = StdioServerParameters(
         command=PYTHON_BIN,
         args=[MCP_SERVER],
-        cwd="/Users/guillermopineda/5g-core-analyzer",
+        cwd=PROJECT_ROOT,
     )
 
     print(f"{YELLOW}=== Reactive MCP Server Test ===\n{NC}")
