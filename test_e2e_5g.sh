@@ -1,16 +1,23 @@
 #!/bin/zsh
 # End-to-end test: UERANSIM UE registration + real-time alert monitoring
 # Usage: ./test_e2e_5g.sh
+#
+# Environment variables:
+#   DOCKER_OPEN5GS_DIR  - Path to docker-open5gs repo (default: /tmp/docker-open5gs)
+#   ANALYZER_DIR        - Path to 5g-core-analyzer repo
+#   API_BASE            - Base URL for the analyzer API (default: http://localhost:8080)
+#   API_KEY             - API key for authentication
+#   LOG_DIR             - Override log directory (defaults to DOCKER_OPEN5GS_DIR/logs)
 
 set -e
 
-# ── Configuration ──────────────────────────────────────────────────────────
-DOCKER_OPEN5GS_DIR="/Users/guillermopineda/docker-open5gs"
-ANALYZER_DIR="/Users/guillermopineda/5g-core-analyzer"
-API_KEY="5ga_xPuiYQrRtTIlzFlnaTEFSRQCIeyoWhDyXXCOI_qpJ2c"
-API_BASE="http://127.0.0.1:8080"
-LOG_DIR="${DOCKER_OPEN5GS_DIR}/logs"
-TENANT_ID="tenant-2a259615ae0eb332"
+# ── Configuration ─────────────────────────────────────────────────────────────
+DOCKER_OPEN5GS_DIR="${DOCKER_OPEN5GS_DIR:-/tmp/docker-open5gs}"
+ANALYZER_DIR="${ANALYZER_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+API_BASE="${API_BASE:-http://localhost:8080}"
+API_KEY="${API_KEY:-5ga_xPuiYQrRtTIlzFlnaTEFSRQCIeyoWhDyXXCOI_qpJ2c}"
+LOG_DIR="${LOG_DIR:-${DOCKER_OPEN5GS_DIR}/logs}"
+TENANT_ID="${TENANT_ID:-tenant-2a259615ae0eb332}"
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 RED='\033[0;31m'

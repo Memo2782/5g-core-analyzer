@@ -406,6 +406,12 @@ jobs:
           sudo apt-get update && sudo apt-get install -y zsh
 
       - name: Run E2E test
+        env:
+          DOCKER_OPEN5GS_DIR: /tmp/docker-open5gs
+          ANALYZER_DIR: ${{ github.workspace }}
+          API_BASE: http://localhost:8080
+          API_KEY: 5ga_xPuiYQrRtTIlzFlnaTEFSRQCIeyoWhDyXXCOI_qpJ2c
+          LOG_DIR: /tmp/docker-open5gs/logs
         run: |
           zsh test_e2e_5g.sh 2>&1
 
@@ -451,7 +457,7 @@ jobs:
 
       - name: Install MCP
         run: |
-          pip install mcp
+          pip install -r requirements.txt
 
       - name: Run MCP server tests
         env:
@@ -495,7 +501,7 @@ jobs:
 
       - name: Install MCP
         run: |
-          pip install mcp websocket-client
+          pip install -r requirements.txt
 
       - name: Run reactive MCP test
         working-directory: ${{ github.workspace }}
