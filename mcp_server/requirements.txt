@@ -1,0 +1,2 @@
+# 5G Core Analyzer MCP Server Dependencies
+mcp>=1.0.0

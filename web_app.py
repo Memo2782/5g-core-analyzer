@@ -57,12 +57,15 @@ async def _send_telemetry():
 async def lifespan(app: FastAPI):
     init_db()
     await _send_telemetry()
+    if not log_agent.running:
+        _monitor_task = asyncio.create_task(log_agent.start_monitoring("/open5gs-logs", tenant_id="tenant-2a259615ae0eb332"))
+        active_monitors["lifespan:/open5gs-logs"] = _monitor_task
     yield
 
 
 app = FastAPI(title="5G E2E Multi-Trace Correlator SaaS", lifespan=lifespan)
 
-trace_store: Dict[str, Dict[str, Any]] = {}
+trace_store: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
 # Real-time monitoring components
 log_agent = LogAgent()
@@ -379,6 +382,35 @@ DASHBOARD_HTML = """
             <h2 style="color:#007acc;">🚨 Real-Time Alerts</h2>
             <div id="realtime-alerts">Connecting to alert stream...</div>
         </div>
+
+        <div style="background:#252525; padding:15px; border-radius:8px; border:1px solid #444; margin-top:20px;">
+            <h2 style="color:#007acc; margin-top:0;">📡 Live Interface Tracking</h2>
+            <div style="margin-bottom:12px;">
+                <label style="color:#007acc; font-weight:bold; margin-right:10px;">Interface:</label>
+                <select id="interface-selector" style="background:#333; color:#e0e0e0; border:1px solid #555; border-radius:4px; padding:6px 12px; font-size:13px;">
+                    <option value="">All Interfaces</option>
+                    <option value="N2">N2 (GNB-AMF)</option>
+                    <option value="N11">N11 (AMF-SMF)</option>
+                    <option value="N8">N8 (AMF-UDM)</option>
+                    <option value="N12">N12 (AMF-AUSF)</option>
+                    <option value="N3">N3 (UPF)</option>
+                    <option value="N4">N4 (SMF-UPF)</option>
+                    <option value="N7">N7 (SMF-PCF)</option>
+                    <option value="N9">N9 (UPF-UPF)</option>
+                    <option value="N15">N15 (AMF-UE)</option>
+                    <option value="ISC">ISC (SCSCF-TAS)</option>
+                    <option value="Gm/Mw">Gm/Mw (UE-PCSCF/PCSCF-SCSCF)</option>
+                    <option value="Mw">Mw (PCSCF-SCSCF)</option>
+                </select>
+                <button id="start-monitoring" onclick="startInterfaceMonitoring()" style="background:#007acc; color:white; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:10px;">Start Monitoring</button>
+                <button id="stop-monitoring" onclick="stopInterfaceMonitoring()" style="background:#dc3545; color:white; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:10px; display:none;">Stop</button>
+            </div>
+            <div id="monitoring-status" style="font-size:12px; color:#aaa; margin-bottom:10px;">Status: Idle</div>
+            <div id="live-alerts" style="background:#1e1e1e; padding:10px; border-radius:6px; max-height:300px; overflow-y:auto; font-size:12px; font-family:monospace;">
+                <div style="color:#888;">Live interface tracking will appear here...</div>
+            </div>
+        </div>
+
         <div class="footer">Ecosistema de Diagnóstico Experto 3GPP via SSH</div>
     </div>
 
@@ -428,6 +460,102 @@ DASHBOARD_HTML = """
                 alertsDiv.insertBefore(item, alertsDiv.firstChild);
             };
         })();
+
+        var interfaceWs = null;
+        var interfaceMonitoring = false;
+
+        function startInterfaceMonitoring() {
+            console.log('startInterfaceMonitoring called');
+            var selector = document.getElementById('interface-selector');
+            var interfaceFilter = selector ? selector.value : '';
+            var statusEl = document.getElementById('monitoring-status');
+            var liveAlerts = document.getElementById('live-alerts');
+            var startBtn = document.getElementById('start-monitoring');
+            var stopBtn = document.getElementById('stop-monitoring');
+
+            if (interfaceMonitoring) return;
+
+            if (liveAlerts) liveAlerts.innerHTML = '<div style="color:#007acc;">Connecting to live interface stream...</div>';
+            if (statusEl) statusEl.textContent = 'Status: Connecting...';
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.style.display = 'inline-block';
+
+            try {
+                console.log('Creating WebSocket to:', 'ws://' + location.host + '/ws/alerts');
+                interfaceWs = new WebSocket('ws://' + location.host + '/ws/alerts');
+                interfaceMonitoring = true;
+                console.log('WebSocket created, readyState:', interfaceWs.readyState);
+
+                interfaceWs.onopen = function() {
+                    if (statusEl) statusEl.textContent = 'Status: Monitoring ' + (interfaceFilter || 'all interfaces');
+                    if (liveAlerts) liveAlerts.innerHTML = '';
+                };
+
+                interfaceWs.onmessage = function(event) {
+                    try {
+                        var data = JSON.parse(event.data);
+                        if (data.type === 'ping') return;
+                        if (!liveAlerts) return;
+
+                        var item = document.createElement('div');
+                        item.style.padding = '8px';
+                        item.style.marginBottom = '6px';
+                        item.style.borderRadius = '4px';
+                        item.style.borderLeft = '3px solid #dc3545';
+                        item.style.background = '#2a2a2a';
+
+                        var interfaceTag = data.interface || data.node || '';
+                        if (interfaceFilter && interfaceTag && interfaceTag !== interfaceFilter) {
+                            return;
+                        }
+
+                        item.innerHTML = '<div style="font-weight:bold;color:#ff9999;">' + (data.rule_name || data.type || 'Alert') + '</div>' +
+                            '<div style="font-size:11px;color:#aaa;">' + (data.node || '') + ' | ' + (data.timestamp || '') + ' | ' + interfaceTag + '</div>' +
+                            '<div style="font-size:11px;color:#ccc; margin-top:4px;">' + (data.message || '') + '</div>';
+
+                        liveAlerts.insertBefore(item, liveAlerts.firstChild);
+                        if (liveAlerts.children.length > 200) {
+                            liveAlerts.removeChild(liveAlerts.lastChild);
+                        }
+                    } catch (e) {
+                        console.error('Live alert parse error', e);
+                    }
+                };
+
+                interfaceWs.onerror = function() {
+                    if (statusEl) statusEl.textContent = 'Status: WebSocket error';
+                    if (liveAlerts) liveAlerts.innerHTML = '<div style="color:#ff6b6b;">WebSocket error. Is the monitoring agent running?</div>';
+                };
+
+                interfaceWs.onclose = function() {
+                    if (statusEl) statusEl.textContent = 'Status: Disconnected';
+                    if (stopBtn) stopBtn.style.display = 'none';
+                    if (startBtn) startBtn.disabled = false;
+                    interfaceMonitoring = false;
+                };
+            } catch (e) {
+                console.error('Failed to start interface monitoring:', e);
+                if (statusEl) statusEl.textContent = 'Status: Failed to start';
+                if (liveAlerts) liveAlerts.innerHTML = '<div style="color:#ff6b6b;">Failed to start live monitoring.</div>';
+                if (startBtn) startBtn.disabled = false;
+                if (stopBtn) stopBtn.style.display = 'none';
+                interfaceMonitoring = false;
+            }
+        }
+
+        function stopInterfaceMonitoring() {
+            if (interfaceWs) {
+                interfaceWs.close();
+                interfaceWs = null;
+            }
+            interfaceMonitoring = false;
+            var statusEl = document.getElementById('monitoring-status');
+            var startBtn = document.getElementById('start-monitoring');
+            var stopBtn = document.getElementById('stop-monitoring');
+            if (statusEl) statusEl.textContent = 'Status: Stopped';
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.style.display = 'none';
+        }
     </script>
 </body>
 </html>
@@ -551,19 +679,27 @@ RESULT_HTML_TEMPLATE = """
                                 mostrarDiagnostico(txt);
                             }});
                         }}
-                        var errorMatch = txt.match(/ERROR Code (\\d+)/);
-                        if (errorMatch && errorMap) {{
-                            let code = errorMatch[1];
-                            if (errorMap[code]) {{
-                                text.style.cursor = 'pointer';
-                                text.style.fill = '#ff6b6b';
-                                text.style.fontWeight = 'bold';
-                                text.addEventListener('click', function() {{
-                                    mostrarErrorDetalles(code);
-                                }});
-                            }}
-                        }}
                     }});
+
+                    var fullText = '';
+                    texts.forEach(function(text) {{
+                        fullText += ' ' + text.textContent.trim();
+                    }});
+
+                    var errorMatch = fullText.match(/ERROR Code (\d+)/);
+                    if (errorMatch && errorMap) {{
+                        let code = errorMatch[1];
+                        if (errorMap[code]) {{
+                            svg.style.cursor = 'pointer';
+                            svg.addEventListener('click', function(e) {{
+                                if (fullText.match(/ERROR Code (\d+)/)) {{
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    mostrarErrorDetalles(code);
+                                }}
+                            }});
+                        }}
+                    }}
                 }});
             }}, 1000);
         }}
@@ -929,6 +1065,471 @@ async def procesar_multiples_pcaps(files: List[UploadFile] = File(...)):
     )
 
 
+@app.get("/tracking", response_class=HTMLResponse)
+async def tracking_dashboard():
+    """Historical alarm tracking dashboard."""
+    return TRACKING_HTML
+
+
+@app.get("/api/alerts/{alert_id}/sequence")
+async def get_alert_sequence(alert_id: str):
+    """Fetch sequence diagram data for a specific alert."""
+    for session_id, cf_map in trace_store.items():
+        for trace_id, data in cf_map.items():
+            if data.get('alert_id') == alert_id or trace_id == alert_id:
+                return JSONResponse(content={
+                    "mermaid_e2e": data["mermaid_e2e"],
+                    "mermaid_ims": data["mermaid_ims"],
+                    "mermaid_5g": data["mermaid_5g"],
+                    "diagnostico_maestro": data["diagnostico_maestro"],
+                    "tracking_info": data["tracking_info"],
+                    "log_details": data["log_details"],
+                    "alert_id": alert_id,
+                    "error_map_js": data["error_map_js"],
+                })
+    return JSONResponse(content={"error": "Alert sequence not found."}, status_code=404)
+
+
+TRACKING_HTML = r"""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historical Alarm Tracking</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({startOnLoad: false, theme: 'dark'});
+
+        var apiKey = '';
+        var baseConocimiento = {
+            'UE': 'User Equipment - Terminal móvil 5G que inicia el procedimiento de registro.',
+            'GNB': 'gNodeB - Estación base 5G que gestiona el acceso radio y la interfaz N2.',
+            'AMF': 'Access and Mobility Management Function - Gestiona registro, movilidad y autenticación.',
+            'AUSF': 'Authentication Server Function - Realiza la autenticación 5G AKA.',
+            'UDM': 'Unified Data Management - Gestiona el perfil de suscripción y datos del usuario.',
+            'SMF': 'Session Management Function - Gestiona el plano de datos y túneles.',
+            'UPF': 'User Plane Function - Nodo de plano de datos que enruta tráfico.',
+            'PCSCF': 'Proxy CSCF - Punto de entrada SIP para IMS.',
+            'SCSCF': 'Serving CSCF - Nodo central de control de llamadas IMS.',
+            'TAS': 'Telephony Application Server - Servidor de aplicaciones de telefonía.'
+        };
+
+        function getApiHeaders() {
+            return { 'x-api-key': apiKey };
+        }
+
+        function saveApiKey() {
+            var input = document.getElementById('api-key-input');
+            var status = document.getElementById('api-key-status');
+            var key = input ? input.value.trim() : '';
+            if (!key) {
+                if (status) status.textContent = 'Please enter an API key.';
+                return;
+            }
+            apiKey = key;
+            localStorage.setItem('tracking_api_key', key);
+            if (status) status.textContent = 'API key saved.';
+            loadSubscribers();
+        }
+
+        function loadSubscribers() {
+            fetch('/api/alerts/history', { headers: getApiHeaders() })
+                .then(function(r) {
+                    if (r.status === 401) {
+                        throw new Error('Unauthorized: please enter your API key.');
+                    }
+                    return r.json();
+                })
+                .then(function(data) {
+                    var list = document.getElementById('subscriber-list');
+                    if (!list) return;
+                    list.innerHTML = '';
+                    if (!data || !data.length) {
+                        list.innerHTML = '<div style="color:#888;">No historical alarms found.</div>';
+                        return;
+                    }
+                    var alerts = data.alerts || data;
+                    if (!alerts || !alerts.length) {
+                        list.innerHTML = '<div style="color:#888;">No historical alarms found.</div>';
+                        return;
+                    }
+                    alerts.forEach(function(item) {
+                        var div = document.createElement('div');
+                        div.className = 'subscriber-item';
+                        div.innerHTML = '<div style="font-weight:bold;color:#e0e0e0;">' + (item.rule_name || item.type || 'Alert') + '</div>' +
+                            '<div style="font-size:12px;color:#aaa;">' + (item.node || '') + ' | ' + (item.timestamp || '') + '</div>';
+                        div.addEventListener('click', function() {
+                            document.querySelectorAll('.subscriber-item').forEach(function(el) { el.style.borderColor = '#333'; });
+                            div.style.borderColor = '#007acc';
+                            showAlertSequence(item.id || item.alert_id);
+                        });
+                        list.appendChild(div);
+                    });
+                })
+                .catch(function(err) {
+                    console.error('Failed to load subscribers:', err);
+                    var list = document.getElementById('subscriber-list');
+                    if (list) list.innerHTML = '<div style="color:#ff6b6b;">' + (err.message || 'Error loading historical alarms.') + '</div>';
+                });
+        }
+
+        function loadTraces() {
+            fetch('/api/traces', { headers: getApiHeaders() })
+                .then(function(r) {
+                    if (r.status === 401) {
+                        throw new Error('Unauthorized: please enter your API key.');
+                    }
+                    return r.json();
+                })
+                .then(function(data) {
+                    var list = document.getElementById('trace-list');
+                    if (!list) return;
+                    list.innerHTML = '';
+                    if (!data || !data.length) {
+                        list.innerHTML = '<div style="color:#888;">No uploaded PCAP traces found.</div>';
+                        return;
+                    }
+                    data.forEach(function(session) {
+                        var sessionDiv = document.createElement('div');
+                        sessionDiv.style.marginBottom = '15px';
+                        sessionDiv.innerHTML = '<div style="font-weight:bold;color:#e0e0e0;margin-bottom:6px;">Session: ' + session.session_id + ' | Traces: ' + session.trace_count + ' | Alerts: ' + session.alert_count + '</div>';
+
+                        var grid = document.createElement('div');
+                        grid.style.display = 'grid';
+                        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
+                        grid.style.gap = '10px';
+
+                        (session.traces || []).forEach(function(trace) {
+                            var div = document.createElement('div');
+                            div.className = 'subscriber-item';
+                            div.innerHTML = '<div style="font-weight:bold;color:#e0e0e0;">Trace ' + trace.trace_id + '</div>' +
+                                '<div style="font-size:12px;color:#aaa;">IMSI: ' + (trace.imsi || 'N/A') + '</div>' +
+                                '<div style="font-size:12px;color:#aaa;">MSISDN: ' + (trace.msisdn || 'N/A') + '</div>' +
+                                '<div style="font-size:12px;color:#aaa;">Alerts: ' + trace.alert_count + '</div>';
+                            div.addEventListener('click', function() {
+                                document.querySelectorAll('#trace-list .subscriber-item').forEach(function(el) { el.style.borderColor = '#333'; });
+                                div.style.borderColor = '#007acc';
+                                showTraceSequence(trace.trace_id);
+                            });
+                            grid.appendChild(div);
+                        });
+
+                        sessionDiv.appendChild(grid);
+                        list.appendChild(sessionDiv);
+                    });
+                })
+                .catch(function(err) {
+                    console.error('Failed to load traces:', err);
+                    var list = document.getElementById('trace-list');
+                    if (list) list.innerHTML = '<div style="color:#ff6b6b;">' + (err.message || 'Error loading uploaded traces.') + '</div>';
+                });
+        }
+
+        function showTraceSequence(traceId) {
+            try {
+                console.log('showTraceSequence called with:', traceId);
+                var panel = document.getElementById('sequence-panel');
+                var diagram = document.getElementById('sequence-diagram');
+                if (!panel || !diagram) return;
+
+                panel.style.display = 'block';
+                panel.classList.add('active');
+                diagram.innerHTML = 'Loading trace ' + traceId + '...';
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                fetch('/api/traces/' + traceId, { headers: getApiHeaders() })
+                    .then(function(r) {
+                        if (r.status === 401) throw new Error('Unauthorized: please enter your API key.');
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        console.log('Trace data received:', data);
+                        var mermaidCode = data.mermaid_e2e || data.mermaid_5g || data.mermaid_ims || 'sequenceDiagram; A-->B: No data';
+                        diagram.innerHTML = '<div class="mermaid">' + mermaidCode + '</div>';
+                        if (data.error_map_js) {
+                            window.errorMap = JSON.parse(data.error_map_js);
+                        }
+                        if (window.mermaid) {
+                            var mermaidDivs = diagram.querySelectorAll('.mermaid');
+                            mermaidDivs.forEach(function(div) {
+                                div.removeAttribute('data-processed');
+                                div.removeAttribute('data-svg');
+                            });
+                            mermaid.run({ nodes: Array.from(mermaidDivs) }).then(function() {
+                                setupMermaidClickHandlers();
+                            }).catch(function(err) {
+                                console.error('Mermaid render error:', err);
+                                showMermaidError(err, mermaidCode);
+                                diagram.innerHTML = '<pre style="background:#1e1e1e;padding:15px;border-radius:6px;overflow:auto;text-align:left;font-size:12px;color:#e0e0e0;white-space:pre-wrap;word-break:break-word;max-width:100%;">' + mermaidCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+                            });
+                        }
+                        if (data.diagnostico_maestro) {
+                            var diag = document.getElementById('sequence-diagnostico');
+                            if (diag) diag.textContent = data.diagnostico_maestro;
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Failed to load trace sequence:', err);
+                        diagram.innerHTML = '<div style="color:#ff6b6b;">Failed to load trace sequence: ' + (err.message || 'Unknown error') + '</div>';
+                    });
+            } catch (e) {
+                console.error('showTraceSequence error:', e);
+            }
+        }
+
+        function showAlertSequence(alertId) {
+            try {
+                console.log('showAlertSequence called with:', alertId);
+                var panel = document.getElementById('sequence-panel');
+                var diagram = document.getElementById('sequence-diagram');
+                console.log('Panel found:', !!panel, 'Diagram found:', !!diagram);
+
+                if (!panel || !diagram) {
+                    console.error('Sequence panel or diagram not found');
+                    return;
+                }
+
+                panel.style.display = 'block';
+                panel.classList.add('active');
+                diagram.innerHTML = 'Loading...';
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                fetch('/api/alerts/' + alertId + '/sequence', { headers: getApiHeaders() })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        console.log('Sequence data received:', data);
+                        var mermaidCode = data.mermaid_e2e || data.mermaid_5g || data.mermaid_ims || 'sequenceDiagram; A-->B: No data';
+                        diagram.innerHTML = '<div class="mermaid">' + mermaidCode + '</div>';
+                        if (data.error_map_js) {
+                            window.errorMap = JSON.parse(data.error_map_js);
+                        }
+                        if (window.mermaid) {
+                            var mermaidDivs = diagram.querySelectorAll('.mermaid');
+                            mermaidDivs.forEach(function(div) {
+                                div.removeAttribute('data-processed');
+                                div.removeAttribute('data-svg');
+                            });
+                            mermaid.run({ nodes: Array.from(mermaidDivs) }).then(function() {
+                                setupMermaidClickHandlers();
+                            }).catch(function(err) {
+                                console.error('Mermaid render error:', err);
+                                showMermaidError(err, mermaidCode);
+                                diagram.innerHTML = '<pre style="background:#1e1e1e;padding:15px;border-radius:6px;overflow:auto;text-align:left;font-size:12px;color:#e0e0e0;white-space:pre-wrap;word-break:break-word;max-width:100%;">' + mermaidCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+                            });
+                        }
+                        if (data.diagnostico_maestro) {
+                            var diag = document.getElementById('sequence-diagnostico');
+                            if (diag) diag.textContent = data.diagnostico_maestro;
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Failed to load sequence:', err);
+                        diagram.innerHTML = '<div style="color:#ff6b6b;">Failed to load sequence diagram.</div>';
+                    });
+            } catch (e) {
+                console.error('showAlertSequence error:', e);
+            }
+        }
+
+        function showMermaidError(err, code) {
+            var errorModal = document.getElementById('mermaid-error-modal');
+            var errorBody = document.getElementById('mermaid-error-body');
+            if (errorModal && errorBody) {
+                errorBody.innerHTML = '<div style="color:#ff9999;">' + (err && err.message ? err.message : String(err)) + '</div>' +
+                    '<pre style="background:#1e1e1e;padding:10px;border-radius:4px;overflow:auto;text-align:left;font-size:12px;color:#e0e0e0;margin-top:10px;">' + code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+                errorModal.style.display = 'block';
+            }
+        }
+
+        function closeMermaidError() {
+            var errorModal = document.getElementById('mermaid-error-modal');
+            if (errorModal) errorModal.style.display = 'none';
+        }
+
+        function mostrarDiagnostico(nodo) {
+            var desc = baseConocimiento[nodo] || 'Nodo de red 5G/IMS.';
+            document.getElementById('error-modal').querySelector('div[id="error-modal-body"]').innerHTML = '<p>' + desc + '</p>';
+            var modal = document.getElementById('error-modal');
+            modal.style.display = 'block';
+            document.getElementById('error-modal-overlay').style.display = 'block';
+        }
+
+        function mostrarErrorDetalles(errorCode) {
+            console.log('mostrarErrorDetalles called with code:', errorCode);
+            if (window.errorMap && window.errorMap[errorCode]) {
+                var detalles = window.errorMap[errorCode];
+                var html = '';
+                detalles.forEach(function(detalle) {
+                    html += '<div class="error-detail-card" style="background:#2a2a2a;border-left:3px solid #dc3545;padding:8px;margin-bottom:8px;border-radius:4px;">';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Error Code</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.codigo + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">3GPP Error</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.error_3gpp + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Timestamp</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.timestamp + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Interface</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.interfaz + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Source</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.origen + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Destination</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.destino + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Procedimiento</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.procedimiento + '</div></div>';
+                    html += '<div class="field" style="margin-bottom:4px;"><div class="label" style="color:#888;font-size:11px;text-transform:uppercase;">Root Cause</div><div class="value" style="color:#ff9999;font-weight:bold;">' + detalle.causa_raiz + '</div></div>';
+                    html += '</div>';
+                    if (detalle.solucion && detalle.solucion.trim() !== '') {
+                        html += '<div class="recommendation" style="background:#1e3a1e;border-left:3px solid #28a745;padding:8px;margin-top:8px;border-radius:4px;">';
+                        html += '<div class="label" style="color:#51cf66;font-size:11px;text-transform:uppercase;">Recommended Action</div>';
+                        html += '<div class="value" style="color:#dddddd;">' + detalle.solucion + '</div>';
+                        html += '</div>';
+                    }
+                });
+                document.getElementById('error-modal-body').innerHTML = html;
+                var modal = document.getElementById('error-modal');
+                modal.style.display = 'block';
+                document.getElementById('error-modal-overlay').style.display = 'block';
+            } else {
+                alert('No details found for error ' + errorCode);
+            }
+        }
+
+        function cerrarModalError() {
+            document.getElementById('error-modal').style.display = 'none';
+            document.getElementById('error-modal-overlay').style.display = 'none';
+        }
+
+        function setupMermaidClickHandlers() {
+            document.removeEventListener('click', window._mermaidClickHandler);
+            window._mermaidClickHandler = function(e) {
+                var target = e.target;
+                var svg = target;
+                while (svg && svg.tagName !== 'svg') {
+                    svg = svg.parentNode;
+                }
+                if (!svg) return;
+
+                var container = svg;
+                while (container && !container.classList.contains('mermaid')) {
+                    container = container.parentNode;
+                }
+                if (!container) return;
+
+                var allText = '';
+                var textEls = svg.querySelectorAll('text');
+                textEls.forEach(function(el) {
+                    allText += ' ' + el.textContent.trim();
+                });
+
+                var errorMatch = allText.match(/ERROR Code (\d+)/);
+                if (errorMatch && window.errorMap) {
+                    let code = errorMatch[1];
+                    if (window.errorMap[code]) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        mostrarErrorDetalles(code);
+                        return;
+                    }
+                }
+                if (baseConocimiento) {
+                    for (var node in baseConocimiento) {
+                        if (allText.indexOf(node) !== -1) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            mostrarDiagnostico(node);
+                            return;
+                        }
+                    }
+                }
+            };
+            document.addEventListener('click', window._mermaidClickHandler);
+        }
+
+        window.addEventListener('load', function() {
+            window.errorMap = JSON.parse(document.getElementById('errorMapData').textContent || '{}');
+            console.log('Initial errorMap:', window.errorMap);
+            setupMermaidClickHandlers();
+
+            var savedKey = localStorage.getItem('tracking_api_key');
+            if (savedKey) {
+                apiKey = savedKey;
+                var input = document.getElementById('api-key-input');
+                var status = document.getElementById('api-key-status');
+                if (input) input.value = savedKey;
+                if (status) status.textContent = 'API key loaded from browser storage.';
+            }
+            loadSubscribers();
+            loadTraces();
+        });
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #e0e0e0; padding: 40px; margin: 0; }
+        .container { max-width: 1000px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 12px; border: 1px solid #333; }
+        h1 { color: #ffffff; text-align: center; }
+        h2 { color: #007acc; margin-top: 30px; }
+        .subscriber-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+        .subscriber-item { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; }
+        .subscriber-item:hover { border-color: #007acc; background: #2a2a2a; }
+        .subscriber-item.active { border-color: #007acc; }
+        .sequence-panel { display: none; margin-top: 25px; }
+        .sequence-panel.active { display: block; }
+        .mermaid { background: #151515; padding: 20px; border-radius: 6px; border: 1px solid #333; overflow-x: auto; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
+        .mermaid svg { user-select: none; -webkit-user-select: none; -moz-user-select: none; }
+        .mermaid text { user-select: none; -webkit-user-select: none; -moz-user-select: none; pointer-events: all; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #1e1e1e; border: 1px solid #dc3545; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow: auto; color: #e0e0e0; }
+        .modal-title { color: #ff9999; font-weight: bold; margin-bottom: 10px; }
+        .modal-body { font-size: 14px; line-height: 1.5; }
+        .modal-body code { background: #2a2a2a; padding: 2px 6px; border-radius: 4px; color: #ff9999; }
+        .modal-close { margin-top: 15px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .mermaid svg text { font-family: Arial, sans-serif !important; }
+        #error-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; }
+        #error-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 360px; max-width: calc(100vw - 32px); background: #252525; border: 2px solid #ff3b3b; padding: 16px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 25px rgba(0,0,0,0.7); font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Historical Alarm Tracking</h1>
+        <p style="color:#aaa; text-align:center;">Select a historical alarm to view its sequence diagram and details.</p>
+
+        <div style="background:#252525; padding:12px; border-radius:8px; border:1px solid #444; margin-bottom:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <label style="color:#007acc; font-weight:bold;">API Key:</label>
+            <input id="api-key-input" type="text" placeholder="5ga_..." style="flex:1; min-width:220px; background:#1e1e1e; color:#e0e0e0; border:1px solid #555; border-radius:4px; padding:6px 10px; font-size:13px;" />
+            <button onclick="saveApiKey()" style="background:#007acc; color:white; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold;">Save</button>
+            <span id="api-key-status" style="font-size:12px; color:#aaa;"></span>
+        </div>
+
+        <h2>🔍 Historical Alarms</h2>
+        <div id="subscriber-list" style="min-height: 120px;">
+            <div style="color:#888;">Loading historical alarms...</div>
+        </div>
+
+        <h2>📁 Uploaded PCAP Traces</h2>
+        <div id="trace-list" style="min-height: 120px;">
+            <div style="color:#888;">Loading uploaded traces...</div>
+        </div>
+
+        <div id="sequence-panel" class="sequence-panel">
+            <h2>📊 Sequence Diagram</h2>
+            <div id="sequence-diagnostico" style="background:#2a2a2a; padding:10px; border-radius:6px; margin-bottom:15px; border:1px solid #444;"></div>
+            <div id="sequence-diagram"></div>
+        </div>
+    </div>
+
+    <div id="mermaid-error-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">⚠️ Diagram Render Error</div>
+            <div class="modal-body" id="mermaid-error-body"></div>
+            <button class="modal-close" onclick="closeMermaidError()">Close</button>
+        </div>
+    </div>
+
+    <div id="error-modal-overlay" onclick="cerrarModalError()"></div>
+    <div id="error-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:360px; max-width:calc(100vw - 32px); background:#252525; border:2px solid #ff3b3b; padding:16px; border-radius:8px; z-index:10000; box-shadow:0 4px 25px rgba(0,0,0,0.7); font-size:13px;">
+        <div style="font-size:16px; font-weight:bold; color:#ff3b3b; margin-bottom:10px; border-bottom:1px solid #444; padding-bottom:8px;">Error Details</div>
+        <div id="error-modal-body" style="font-size:13px; color:#dddddd; line-height:1.5; margin-bottom:14px; max-height:55vh; overflow-y:auto;"></div>
+        <button class="modal-close" onclick="cerrarModalError()" style="margin-top:10px; padding:6px 14px; background:#dc3545; color:white; border:none; font-weight:bold; border-radius:4px; cursor:pointer; font-size:13px;">Close</button>
+    </div>
+
+    <script type="application/json" id="errorMapData">{}</script>
+</body>
+</html>
+"""
+
+
 @app.get("/test-websocket", response_class=HTMLResponse)
 async def test_websocket():
     """Test page for WebSocket alert streaming."""
@@ -951,13 +1552,57 @@ async def list_call_flows():
     return JSONResponse(content=response)
 
 
+@app.get("/api/traces")
+async def list_traces(tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """List historical PCAP trace sessions."""
+    response = []
+    for session_id, session_data in trace_store.items():
+        if not isinstance(session_data, dict):
+            continue
+        response.append({
+            "session_id": session_id,
+            "trace_count": len(session_data),
+            "alert_count": 0,
+            "traces": [
+                {
+                    "trace_id": trace_id,
+                    "imsi": data.get('imsi', '') if isinstance(data, dict) else '',
+                    "msisdn": data.get('msisdn', '') if isinstance(data, dict) else '',
+                    "call_id": data.get('call_id', '') if isinstance(data, dict) else '',
+                    "alert_count": data.get('alert_count', 0) if isinstance(data, dict) else 0,
+                }
+                for trace_id, data in session_data.items()
+            ]
+        })
+    return JSONResponse(content=response)
+
+
 @app.get("/api/traces/{trace_id}")
-async def get_trace(trace_id: str):
+async def get_trace(trace_id: str, tenant_ctx: TenantContext = Depends(get_current_tenant)):
     """Fetch a specific call flow's full rendered data."""
-    for session_id, cf_map in trace_store.items():
-        if trace_id in cf_map:
-            return JSONResponse(content=cf_map[trace_id])
+    for session_id, session_data in trace_store.items():
+        if isinstance(session_data, dict) and trace_id in session_data:
+            return JSONResponse(content=session_data[trace_id])
     return JSONResponse(content={"error": "Call flow not found. Upload traces first."}, status_code=404)
+
+
+@app.get("/api/alerts/{alert_id}/sequence")
+async def get_alert_sequence(alert_id: str):
+    """Fetch sequence diagram data for a specific alert."""
+    for session_id, cf_map in trace_store.items():
+        for trace_id, data in cf_map.items():
+            if data.get('alert_id') == alert_id or trace_id == alert_id:
+                return JSONResponse(content={
+                    "mermaid_e2e": data["mermaid_e2e"],
+                    "mermaid_ims": data["mermaid_ims"],
+                    "mermaid_5g": data["mermaid_5g"],
+                    "diagnostico_maestro": data["diagnostico_maestro"],
+                    "tracking_info": data["tracking_info"],
+                    "log_details": data["log_details"],
+                    "alert_id": alert_id,
+                    "error_map_js": data["error_map_js"],
+                })
+    return JSONResponse(content={"error": "Alert sequence not found."}, status_code=404)
 
 
 # ==================== REAL-TIME MONITORING ENDPOINTS ====================
@@ -1089,6 +1734,15 @@ async def reset_alert(alert_id: str):
     return JSONResponse(content={"status": "reset", "alert_id": alert_id})
 
 
+@app.post("/api/alerts/reset-all")
+async def reset_all_alerts(tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """Reset all in-memory active alerts to allow re-triggering."""
+    log_agent.active_alerts.clear()
+    for window in log_agent.alert_windows.values():
+        window.reset()
+    return JSONResponse(content={"status": "all_alerts_reset", "tenant_id": tenant_ctx.tenant_id})
+
+
 @app.get("/api/agent/status")
 async def get_agent_status(tenant_ctx: TenantContext = Depends(get_current_tenant)):
     """Get current monitoring status for the current tenant."""
@@ -1099,8 +1753,32 @@ async def get_agent_status(tenant_ctx: TenantContext = Depends(get_current_tenan
         "active_alerts": len(log_agent.active_alerts),
         "total_alerts": len(log_agent.alert_history),
         "rules_loaded": len(log_agent.rules),
-        "tenant_id": tenant_ctx.tenant_id
+        "subscribers": len(log_agent.subscribers),
+        "tenant_id": tenant_ctx.tenant_id,
+        "debug": {
+            "active_monitors": {k: {"done": v.done(), "cancelled": v.cancelled()} for k, v in active_monitors.items()},
+            "alert_window_counts": {k: w.events.maxlen if w.events.maxlen else len(w.events) for k, w in log_agent.alert_windows.items()},
+        }
     })
+
+
+@app.post("/api/ingest")
+async def ingest_events(request: Request, tenant_ctx: TenantContext = Depends(get_current_tenant)):
+    """Ingest JSON log events directly and evaluate alert rules."""
+    try:
+        body = await request.json()
+        events = body.get("events", [])
+        if not events:
+            return JSONResponse(content={"error": "Missing 'events' array"}, status_code=400)
+        
+        await log_agent.ingest_events(events, tenant_id=tenant_ctx.tenant_id)
+        return JSONResponse(content={
+            "status": "ingested",
+            "count": len(events),
+            "tenant_id": tenant_ctx.tenant_id
+        })
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 # ==================== MULTI-TENANT AUTH ENDPOINTS ====================
@@ -1220,7 +1898,7 @@ async def init_database():
 # ==================== BILLING & SUBSCRIPTION ENDPOINTS ====================
 
 PLAN_LIMITS = {
-    "starter": {"sites": 1, "events_per_day": 5000},
+    "starter": {"sites": -1, "events_per_day": 5000},
     "pro": {"sites": 5, "events_per_day": 50000},
     "enterprise": {"sites": -1, "events_per_day": -1},
 }

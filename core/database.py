@@ -109,6 +109,8 @@ class AlertRecord(Base):
     acknowledged_by = Column(String, nullable=True)
     acknowledged_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    imsi = Column(String, nullable=True, index=True)
+    msisdn = Column(String, nullable=True, index=True)
 
     tenant = relationship("Tenant", back_populates="alerts")
 
@@ -125,3 +127,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_db_session():
+    """Get a new database session for manual management (e.g., WebSocket handlers)."""
+    return SessionLocal()

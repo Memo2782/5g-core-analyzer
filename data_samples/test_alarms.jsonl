@@ -1,0 +1,33 @@
+{"timestamp": "2026-08-19T23:06:13.000Z", "http_status": "503", "source_nf": "SMF", "dest_nf": "UPF", "interface": "N11", "details": "PFCP failure 1"}
+{"timestamp": "2026-08-19T23:06:14.000Z", "http_status": "504", "source_nf": "SMF", "dest_nf": "UPF", "interface": "N11", "details": "PFCP failure 2"}
+{"timestamp": "2026-08-19T23:06:15.000Z", "http_status": "503", "source_nf": "SMF", "dest_nf": "UPF", "interface": "N11", "details": "PFCP failure 3"}
+{"timestamp": "2026-08-19T23:06:16.000Z", "http_status": "504", "source_nf": "SMF", "dest_nf": "UPF", "interface": "N11", "details": "PFCP failure 4"}
+{"timestamp": "2026-08-19T23:06:17.000Z", "http_status": "503", "source_nf": "SMF", "dest_nf": "UPF", "interface": "N11", "details": "PFCP failure 5"}
+{"timestamp": "2026-08-19T23:06:18.000Z", "http_status": "504", "source_nf": "SMF", "dest_nf": "UPF", "interface": "N11", "details": "PFCP failure 6"}
+{"timestamp": "2026-08-19T23:06:13.000Z", "http_status": "401", "source_nf": "AUSF", "dest_nf": "UE", "interface": "N12", "details": "Auth failure 1"}
+{"timestamp": "2026-08-19T23:06:14.000Z", "http_status": "401", "source_nf": "AUSF", "dest_nf": "UE", "interface": "N12", "details": "Auth failure 2"}
+{"timestamp": "2026-08-19T23:06:15.000Z", "http_status": "401", "source_nf": "AUSF", "dest_nf": "UE", "interface": "N12", "details": "Auth failure 3"}
+{"timestamp": "2026-08-19T23:06:16.000Z", "http_status": "401", "source_nf": "AUSF", "dest_nf": "UE", "interface": "N12", "details": "Auth failure 4"}
+{"timestamp": "2026-08-19T23:06:13.000Z", "http_status": "503", "source_nf": "PCF", "dest_nf": "AMF", "interface": "N5", "details": "Policy failure 1"}
+{"timestamp": "2026-08-19T23:06:14.000Z", "http_status": "503", "source_nf": "PCF", "dest_nf": "AMF", "interface": "N5", "details": "Policy failure 2"}
+{"timestamp": "2026-08-19T23:06:15.000Z", "http_status": "503", "source_nf": "PCF", "dest_nf": "AMF", "interface": "N5", "details": "Policy failure 3"}
+{"timestamp": "2026-08-19T23:06:13.000Z", "http_status": "404", "source_nf": "UDM", "dest_nf": "AMF", "interface": "N8", "details": "Subscription missing 1"}
+{"timestamp": "2026-08-19T23:06:14.000Z", "http_status": "404", "source_nf": "UDM", "dest_nf": "AMF", "interface": "N8", "details": "Subscription missing 2"}
+{"timestamp": "2026-08-19T23:06:15.000Z", "http_status": "404", "source_nf": "UDM", "dest_nf": "AMF", "interface": "N8", "details": "Subscription missing 3"}
+{"timestamp": "2026-08-19T23:06:16.000Z", "http_status": "404", "source_nf": "UDM", "dest_nf": "AMF", "interface": "N8", "details": "Subscription missing 4"}
+{"timestamp": "2026-08-19T23:06:13.000Z", "http_status": "200", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP INVITE", "details": "SIP response 1"}
+{"timestamp": "2026-08-19T23:06:14.000Z", "http_status": "200", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP INVITE", "details": "SIP response 2"}
+{"timestamp": "2026-08-19T23:06:15.000Z", "http_status": "200", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP INVITE", "details": "SIP response 3"}
+{"timestamp": "2026-08-19T23:06:16.000Z", "http_status": "200", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP INVITE", "details": "SIP response 4"}
+{"timestamp": "2026-08-19T23:06:17.000Z", "http_status": "200", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP INVITE", "details": "SIP response 5"}
+{"timestamp": "2026-08-19T23:06:18.000Z", "http_status": "200", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP INVITE", "details": "SIP response 6"}
+{"timestamp": "2026-08-19T23:06:13.000Z", "http_status": "440", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 1"}
+{"timestamp": "2026-08-19T23:06:14.000Z", "http_status": "441", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 2"}
+{"timestamp": "2026-08-19T23:06:15.000Z", "http_status": "442", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 3"}
+{"timestamp": "2026-08-19T23:06:16.000Z", "http_status": "443", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 4"}
+{"timestamp": "2026-08-19T23:06:17.000Z", "http_status": "444", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 5"}
+{"timestamp": "2026-08-19T23:06:18.000Z", "http_status": "445", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 6"}
+{"timestamp": "2026-08-19T23:06:19.000Z", "http_status": "446", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 7"}
+{"timestamp": "2026-08-19T23:06:20.000Z", "http_status": "447", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 8"}
+{"timestamp": "2026-08-19T23:06:21.000Z", "http_status": "448", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 9"}
+{"timestamp": "2026-08-19T23:06:22.000Z", "http_status": "449", "source_nf": "PCSCF", "dest_nf": "UE", "interface": "Gm/Mw", "procedure": "SIP", "details": "SIP error 10"}

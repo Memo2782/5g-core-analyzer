@@ -22,3 +22,6 @@ uploads/
 .idea/
 .DS_Store
 *.db
+
+# Embedded repos
+open5gs/
