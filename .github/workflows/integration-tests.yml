@@ -55,7 +55,7 @@ jobs:
           git clone --depth 1 https://github.com/Borjis131/docker-open5gs.git
           ls -la docker-open5gs/
 
-       - name: Apply UPF fix (devices + pfcp client)
+      - name: Apply UPF fix (devices + pfcp client)
         run: |
           # Add /dev/net/tun device to UPF in docker-compose.yml
           cd /tmp/docker-open5gs
