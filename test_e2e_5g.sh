@@ -55,6 +55,7 @@ print(d.get('active_alerts', 0))
 }
 
 set +e
+set -x
 
 # ── 1. Ensure containers are running ────────────────────────────────────────
 info "Checking Open5GS and UERANSIM containers..."
