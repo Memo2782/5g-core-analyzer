@@ -65,7 +65,6 @@ mark() {
 }
 
 # ── 1. Verify UE registration (no container management in CI) ──────────
-mark "checking UE registration"
 info "Checking UE registration status..."
 
 # In CI, containers are already managed by workflow steps 4-8.
