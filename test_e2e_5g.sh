@@ -55,7 +55,6 @@ print(d.get('active_alerts', 0))
 }
 
 set +e
-set -x
 
 PROGRESS_FILE="/tmp/e2e-progress.txt"
 touch "$PROGRESS_FILE"
@@ -65,32 +64,49 @@ mark() {
     echo "[step] $1"
 }
 
-# ── 1. Ensure containers are running ────────────────────────────────────────
+# ── 1. Ensure containers are running (no-op in CI, needed for local) ────
 mark "checking containers"
 info "Checking Open5GS and UERANSIM containers..."
 
 cd "${DOCKER_OPEN5GS_DIR}"
-docker compose up -d 2>&1
-docker compose up -d upf 2>&1
+# Only start containers, don't restart running ones
+docker compose up -d --no-recreate 2>&1 || true
+docker compose up -d upf --no-recreate 2>&1 || true
 
 sleep 5
 
 pass "Containers checked"
 
 # ── 2. Verify UE registration ────────────────────────────────────────────────
-mark "starting UE restart"
-info "Restarting UE for fresh registration..."
-docker restart ue 2>&1
-mark "UE restart done, polling for registration"
-info "Waiting for UE re-registration (up to 60s)..."
+# In CI, UE is already registered (step 8 passed). In local, containers may be fresh.
+# Check if already registered first; only restart if not.
+mark "checking UE registration"
+info "Checking UE registration status..."
 UE_REGISTERED=false
-for i in $(seq 1 20); do
+for i in $(seq 1 10); do
     sleep 3
     if docker logs ue 2>&1 | grep -q "Initial Registration is successful"; then
         UE_REGISTERED=true
         break
     fi
 done
+
+if [ "$UE_REGISTERED" = true ]; then
+    pass "UE already registered"
+else
+    mark "starting UE restart"
+    info "Restarting UE for fresh registration..."
+    docker restart ue 2>&1
+    mark "UE restart done, polling for registration"
+    info "Waiting for UE re-registration (up to 60s)..."
+    for i in $(seq 1 20); do
+        sleep 3
+        if docker logs ue 2>&1 | grep -q "Initial Registration is successful"; then
+            UE_REGISTERED=true
+            break
+        fi
+    done
+fi
 
 UE_LOG=$(docker logs ue 2>&1)
 if echo "$UE_LOG" | grep -q "Initial Registration is successful"; then
@@ -235,3 +251,4 @@ echo "  Active Alerts:            ${ACTIVE}"
 echo "  Rules Loaded:             $(curl -s --max-time 5 -H "X-API-Key: ${API_KEY}" "${API_BASE}/api/agent/status" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("rules_loaded",0))' 2>/dev/null || echo 'N/A')"
 echo "  WebSocket:                $(curl -s --max-time 5 -H "X-API-Key: ${API_KEY}" "${API_BASE}/api/agent/status" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("subscribers",0))' 2>/dev/null || echo 'N/A')"
 echo "=============================================="
+exit 0
