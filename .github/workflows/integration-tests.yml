@@ -417,28 +417,42 @@ jobs:
           API_KEY: 5ga_xPuiYQrRtTIlzFlnaTEFSRQCIeyoWhDyXXCOI_qpJ2c
           LOG_DIR: /tmp/docker-open5gs/logs
         run: |
-          zsh test_e2e_5g.sh 2>&1 || (cp /tmp/docker-open5gs/logs/* /tmp/e2e-failure-logs/ 2>/dev/null; exit 1)
+          mkdir -p /tmp/e2e-diagnostics
+          zsh test_e2e_5g.sh 2>&1 | tee /tmp/e2e-diagnostics/trace.txt
+          exit ${PIPESTATUS[0]}
 
       - name: Dump E2E diagnostics
         if: failure()
         working-directory: /tmp/docker-open5gs
         run: |
-          echo "===== TEST SCRIPT TRACE ====="
-          cat /tmp/e2e-trace.txt 2>/dev/null || echo "(no trace file)"
-          echo ""
-          echo "===== OPEN5GS CONTAINER LOGS ====="
+          DIAG_DIR=/tmp/e2e-diagnostics
+          mkdir -p "$DIAG_DIR"
+          echo "===== TEST SCRIPT TRACE =====" > "$DIAG_DIR/diagnostics.txt"
+          cat "$DIAG_DIR/trace.txt" 2>/dev/null >> "$DIAG_DIR/diagnostics.txt"
+          echo "" >> "$DIAG_DIR/diagnostics.txt"
+          echo "===== OPEN5GS CONTAINER LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
           for c in db nrf ausf udm udr pcf amf smf upf nssf bsf scp; do
-            echo "--- $c ---"
-            docker logs "$c" 2>&1 | tail -80
+            echo "--- $c ---" >> "$DIAG_DIR/diagnostics.txt"
+            docker logs "$c" 2>&1 | tail -80 >> "$DIAG_DIR/diagnostics.txt"
           done
-          echo "===== UERANSIM CONTAINER LOGS ====="
+          echo "===== UERANSIM CONTAINER LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
           for c in gnb ue; do
-            echo "--- $c ---"
-            docker logs "$c" 2>&1 | tail -80
+            echo "--- $c ---" >> "$DIAG_DIR/diagnostics.txt"
+            docker logs "$c" 2>&1 | tail -80 >> "$DIAG_DIR/diagnostics.txt"
           done
-          echo "===== ANALYZER APP LOGS ====="
+          echo "===== ANALYZER APP LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
+          docker -f /tmp/docker-open5gs/docker-compose.yml logs --tail=100 >> "$DIAG_DIR/diagnostics.txt" 2>&1 || true
           cd ${{ github.workspace }}
-          docker compose -f docker-compose.yml logs --tail=100 2>&1 || true
+          docker compose -f docker-compose.yml logs --tail=100 >> "$DIAG_DIR/diagnostics.txt" 2>&1 || true
+          echo "Diagnostics saved to $DIAG_DIR/diagnostics.txt"
+
+      - name: Upload E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-diagnostics
+          path: /tmp/e2e-diagnostics/
+          retention-days: 1
 
       - name: Cleanup
         if: always()

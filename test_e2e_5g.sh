@@ -57,11 +57,6 @@ print(d.get('active_alerts', 0))
 set +e
 set -x
 
-# Save full trace to a file for CI diagnostics
-mkdir -p /tmp/e2e-failure-logs
-TRACE_FILE=/tmp/e2e-trace.txt
-exec > >(tee -a "$TRACE_FILE") 2>&1
-
 # ── 1. Ensure containers are running ────────────────────────────────────────
 info "Checking Open5GS and UERANSIM containers..."
 
