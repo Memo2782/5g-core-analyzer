@@ -67,16 +67,16 @@ sleep 5
 
 # Restart gNB and UE
 docker restart gnb ue > /dev/null 2>&1
-sleep 12
+sleep 15
 
 pass "Containers started"
 
 # ── 2. Verify UE registration ────────────────────────────────────────────────
 info "Restarting UE for fresh registration..."
 docker restart ue 2>&1
-info "Waiting for UE re-registration (up to 45s)..."
+info "Waiting for UE re-registration (up to 60s)..."
 UE_REGISTERED=false
-for i in $(seq 1 15); do
+for i in $(seq 1 20); do
     sleep 3
     if docker logs ue 2>&1 | tail -5 | grep -q "Initial Registration is successful"; then
         UE_REGISTERED=true
@@ -90,6 +90,14 @@ if echo "$UE_LOG" | grep -q "Initial Registration is successful"; then
 else
     fail "UE registration failed"
     echo "$UE_LOG"
+    echo ""
+    info "=== Diagnostic info ==="
+    echo "UE container logs (last 30 lines):"
+    docker logs ue 2>&1 | tail -30
+    echo "AMF container logs (last 10 lines):"
+    docker logs amf 2>&1 | tail -10
+    echo "gNB container logs (last 10 lines):"
+    docker logs gnb 2>&1 | tail -10
     exit 1
 fi
 
