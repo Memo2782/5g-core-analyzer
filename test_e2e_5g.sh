@@ -75,13 +75,13 @@ info "Waiting for UE re-registration (up to 60s)..."
 UE_REGISTERED=false
 for i in $(seq 1 20); do
     sleep 3
-    if docker logs ue 2>&1 | tail -5 | grep -q "Initial Registration is successful"; then
+    if docker logs ue 2>&1 | grep -q "Initial Registration is successful"; then
         UE_REGISTERED=true
         break
     fi
 done
 
-UE_LOG=$(docker logs ue 2>&1 | tail -8)
+UE_LOG=$(docker logs ue 2>&1)
 if echo "$UE_LOG" | grep -q "Initial Registration is successful"; then
     pass "UE registration successful"
 else
