@@ -418,8 +418,12 @@ jobs:
           LOG_DIR: /tmp/docker-open5gs/logs
         run: |
           mkdir -p /tmp/e2e-diagnostics
-          zsh test_e2e_5g.sh 2>&1 | tee /tmp/e2e-diagnostics/trace.txt
-          exit ${PIPESTATUS[0]}
+          zsh test_e2e_5g.sh > /tmp/e2e-diagnostics/trace.txt 2>&1
+          TEST_EXIT=$?
+          echo "EXIT_CODE=${TEST_EXIT}" >> /tmp/e2e-diagnostics/trace.txt
+          cat /tmp/e2e-diagnostics/trace.txt
+          cat /tmp/e2e-progress.txt 2>/dev/null
+          exit ${TEST_EXIT}
 
       - name: Dump E2E diagnostics
         if: failure()
@@ -427,24 +431,24 @@ jobs:
         run: |
           DIAG_DIR=/tmp/e2e-diagnostics
           mkdir -p "$DIAG_DIR"
-          echo "===== TEST SCRIPT TRACE =====" > "$DIAG_DIR/diagnostics.txt"
+          echo "===== TRACE =====" > "$DIAG_DIR/diagnostics.txt"
           cat "$DIAG_DIR/trace.txt" 2>/dev/null >> "$DIAG_DIR/diagnostics.txt"
-          echo "" >> "$DIAG_DIR/diagnostics.txt"
-          echo "===== OPEN5GS CONTAINER LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
-          for c in db nrf ausf udm udr pcf amf smf upf nssf bsf scp; do
+          echo "===== PROGRESS =====" >> "$DIAG_DIR/diagnostics.txt"
+          cat /tmp/e2e-progress.txt 2>/dev/null >> "$DIAG_DIR/diagnostics.txt"
+          PROGRESS=$(cat /tmp/e2e-progress.txt 2>/dev/null || echo "(none)")
+          echo "::error::E2E FAIL Progress: $(echo "$PROGRESS" | tr '\n' '|')"
+          echo "::error::Trace tail: $(tail -5 "$DIAG_DIR/trace.txt" 2>/dev/null | tr '\n' '|')"
+          echo "::error::UE: $(docker logs ue 2>&1 | tail -10 | tr '\n' '|')"
+          echo "::error::AMF: $(docker logs amf 2>&1 | tail -10 | tr '\n' '|')"
+          echo "::error::gNB: $(docker logs gnb 2>&1 | tail -10 | tr '\n' '|')"
+          echo "::error::SMF: $(docker logs smf 2>&1 | tail -10 | tr '\n' '|')"
+          echo "===== CONTAINER LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
+          for c in db nrf ausf udm udr pcf amf smf upf nssf bsf scp gnb ue; do
             echo "--- $c ---" >> "$DIAG_DIR/diagnostics.txt"
-            docker logs "$c" 2>&1 | tail -80 >> "$DIAG_DIR/diagnostics.txt"
+            docker logs "$c" 2>&1 | tail -50 >> "$DIAG_DIR/diagnostics.txt"
           done
-          echo "===== UERANSIM CONTAINER LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
-          for c in gnb ue; do
-            echo "--- $c ---" >> "$DIAG_DIR/diagnostics.txt"
-            docker logs "$c" 2>&1 | tail -80 >> "$DIAG_DIR/diagnostics.txt"
-          done
-          echo "===== ANALYZER APP LOGS =====" >> "$DIAG_DIR/diagnostics.txt"
-          docker -f /tmp/docker-open5gs/docker-compose.yml logs --tail=100 >> "$DIAG_DIR/diagnostics.txt" 2>&1 || true
           cd ${{ github.workspace }}
           docker compose -f docker-compose.yml logs --tail=100 >> "$DIAG_DIR/diagnostics.txt" 2>&1 || true
-          echo "Diagnostics saved to $DIAG_DIR/diagnostics.txt"
 
       - name: Upload E2E diagnostics
         if: failure()
