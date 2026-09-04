@@ -409,6 +409,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y zsh
 
       - name: Run E2E test
+        id: e2e
         env:
           DOCKER_OPEN5GS_DIR: /tmp/docker-open5gs
           ANALYZER_DIR: ${{ github.workspace }}
@@ -416,7 +417,28 @@ jobs:
           API_KEY: 5ga_xPuiYQrRtTIlzFlnaTEFSRQCIeyoWhDyXXCOI_qpJ2c
           LOG_DIR: /tmp/docker-open5gs/logs
         run: |
-          zsh test_e2e_5g.sh 2>&1
+          zsh test_e2e_5g.sh 2>&1 || (cp /tmp/docker-open5gs/logs/* /tmp/e2e-failure-logs/ 2>/dev/null; exit 1)
+
+      - name: Dump E2E diagnostics
+        if: failure()
+        working-directory: /tmp/docker-open5gs
+        run: |
+          echo "===== TEST SCRIPT TRACE ====="
+          cat /tmp/e2e-trace.txt 2>/dev/null || echo "(no trace file)"
+          echo ""
+          echo "===== OPEN5GS CONTAINER LOGS ====="
+          for c in db nrf ausf udm udr pcf amf smf upf nssf bsf scp; do
+            echo "--- $c ---"
+            docker logs "$c" 2>&1 | tail -80
+          done
+          echo "===== UERANSIM CONTAINER LOGS ====="
+          for c in gnb ue; do
+            echo "--- $c ---"
+            docker logs "$c" 2>&1 | tail -80
+          done
+          echo "===== ANALYZER APP LOGS ====="
+          cd ${{ github.workspace }}
+          docker compose -f docker-compose.yml logs --tail=100 2>&1 || true
 
       - name: Cleanup
         if: always()
