@@ -65,11 +65,7 @@ docker compose up -d upf 2>&1
 
 sleep 5
 
-# Restart gNB and UE
-docker restart gnb ue > /dev/null 2>&1
-sleep 15
-
-pass "Containers started"
+pass "Containers checked"
 
 # ── 2. Verify UE registration ────────────────────────────────────────────────
 info "Restarting UE for fresh registration..."
